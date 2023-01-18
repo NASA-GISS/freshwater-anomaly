@@ -1,0 +1,11 @@
+* Table of contents                               :toc_2:noexport:
+- [[#introduction][Introduction]]
+
+* Introduction
+
+This workbook computes freshwater anomaly from Greenland and Antarctica for the NASA GISS ModelE.
+
++ Anomaly is defined as mass loss since 1990
++ Temporal resolution is annual
++ Spatially, ModelE distributes a single value according to a 'distribution field' - a floating point mask that sums to 1.
+
