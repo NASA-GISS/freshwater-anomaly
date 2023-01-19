@@ -1,23 +1,33 @@
 * Table of contents                               :toc_2:noexport:
 - [[#introduction][Introduction]]
-- [[#slater-et-al-fig-4][Slater /et al./ Fig. 4]]
-- [[#greenland][Greenland]]
+- [[#questions][Questions]]
+- [[#slater-et-al-2021-fig-4][Slater /et al./ 2021 Fig. 4]]
+- [[#mankoff-et-al-2021][Mankoff /et al./ 2021]]
   - [[#fetch-historical-observations][Fetch historical observations]]
+  - [[#compare-mankoff-2021--slater-2021][Compare Mankoff 2021 & Slater 2021]]
   - [[#process-to-modele-format][Process to ModelE format]]
 - [[#antarctica][Antarctica]]
+  - [[#compare-imbie-2018--slater-2021][Compare IMBIE 2018 & Slater 2021]]
 
 * Introduction
 
 This workbook computes freshwater anomaly from Greenland and Antarctica for the NASA GISS ModelE.
 
-+ Anomaly is defined as mass loss since 1990
++ Anomaly is defined as mass loss since [TBD]
 + Temporal resolution is annual
 + Spatially, ModelE distributes a single value according to a 'distribution field' - a floating point mask that sums to 1.
 
-* Slater /et al./ Fig. 4
+* Questions
 
-+ See https://doi.org/10.5194/tc-15-233-2021
-+ Data shared via email (pers. comm.)
++ [ ] Should NH anomaly include Slater 2021 "Arctic Sea Ice"?
+  + [ ] If so, on what spatial distribution (mask)?
++ [ ] Should SH anomaly include "Antarctic Sea Ice"?
+  + [ ] If so, on what spatial distribution (mask)?
+
+* Slater /et al./ 2021 Fig. 4
+
++ Paper https://doi.org/10.5194/tc-15-233-2021
++ Data: Shared via email (pers. comm.)
 
 #+BEGIN_SRC jupyter-python
 import pandas as pd
@@ -42,7 +52,7 @@ df.index.name = 'Date'
 
 # df.plot.area() # NO
 # Split positive and negative and plot separately but visually combined
-# https://stackoverflow.com/questions/52872938/stacked-area-plot-in-python-with-positive-and-negative-values
+# https://stackoverflow.com/questions/52872938/
 import matplotlib.pyplot as plt
 fig, ax = plt.subplots()
 cm = 'GnBu'
@@ -52,6 +62,7 @@ ax.set_prop_cycle(None)
 df_neg.plot.area(ax=ax, stacked=True, linewidth=0., legend=False, cmap=cm)
 ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
 plt.hlines(0, 0, 1E3, color='k', linewidth=1, alpha=0.33, linestyles='dashed')
+ax.set_ylabel('Mass change [Gt]')
 
 plt.savefig('./fig/slater_2021_fig4.png', dpi=150)
 #+END_SRC
@@ -60,15 +71,12 @@ plt.savefig('./fig/slater_2021_fig4.png', dpi=150)
 :RESULTS:
 : /home/kdm/local/miniconda3/envs/ds/lib/python3.8/site-packages/pandas/plotting/_matplotlib/core.py:1437: UserWarning: Attempting to set identical bottom == top == 0.0 results in singular transformations; automatically expanding.
 :   ax.set_ylim(None, 0)
-[[file:./.ob-jupyter/e800dd8d7ee08532ba0a7da1d4803d95e13cb771.png]]
+[[file:./.ob-jupyter/04392aefad0c27e3c1b48a63cd861d0d06adb585.png]]
 :END:
 
 
-* Greenland
+* Mankoff /et al./ 2021
 
-Greenland mass loss comes from historical observations and future simulations.
-
-Historical:
 + Paper: Mankoff /et al./ 2021; https://doi.org/10.5194/essd-13-5001-2021
 + Data: https://doi.org/10.22008/FK2/OHI23Z v439
 
@@ -80,6 +88,45 @@ wget -nc  https://dataverse.geus.dk/api/access/datafile/:persistentId?persistent
 #+END_SRC
 
 #+RESULTS:
+
+** Compare Mankoff 2021 & Slater 2021
+
+#+BEGIN_SRC jupyter-python
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+fig, (ax, ax2) = plt.subplots(nrows=2, figsize=(4,5))
+
+kw = {'parse_dates':True, 'index_col':0}
+S2021 = pd.read_csv('./input/GrIS_cumul_1994_2017_annual.csv', names=['Slater GrIS'], **kw)
+M2021 = pd.read_csv('./input/mankoff_2021.csv', **kw)
+M2021 = M2021['MB'].rename('Mankoff 2021').resample('YS').sum()['1994':'2022-12-31'].cumsum()
+
+df = S2021.merge(M2021, left_index=True, right_index=True, how='outer')
+df.index.name = 'Date'
+
+for _ in df.columns: # extend by 1 year for plotting w/ 'step'
+    df.loc[df[_].dropna().index[-1] + pd.offsets.DateOffset(years=1),_] = df[_].dropna().iloc[-1]
+
+kw = {'drawstyle':'steps'}
+(df['Mankoff 2021']).diff().plot(ax=ax, **kw)
+(df['Slater GrIS']).diff().plot(ax=ax, **kw)
+ax.set_ylabel('Annual\nmass change [Gt]')
+(df['Mankoff 2021'].diff() - df['Slater GrIS'].diff()).plot(ax=ax, linestyle='--', color='k', alpha=0.5, **kw)
+
+df.plot(ax=ax2, **kw)
+_ = ax2.set_ylabel('Cumulative\nmass change [Gt]')
+axr = ax2.twinx()
+axr.set_ylim(np.array(ax2.get_ylim()).astype(float)/-362)
+axr.set_ylabel('SLR [mm]')
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+: Text(0, 0.5, 'SLR [mm]')
+[[file:./.ob-jupyter/98045487aa2c373c96c248d667e8a1cf1ca6a1e3.png]]
+:END:
+
 
 ** Process to ModelE format
 
@@ -132,4 +179,101 @@ time
 Freq: AS-JAN, Name: MB, dtype: float64
 #+end_example
 
+
 * Antarctica
+
+** Compare IMBIE 2018 & Slater 2021
+
++ http://imbie.org/data-downloads/
+
+#+BEGIN_SRC bash
+wget -q http://imbie.org/data-files/imbie_dataset-2018_07_23.xlsx
+mv imbie_dataset-2018_07_23.xlsx ./input
+md5sum ./input/imbie_dataset-2018_07_23.xlsx
+#+END_SRC
+
+#+RESULTS:
+: 0428261d001f8e3b8a18d43e6f29b629  ./input/imbie_dataset-2018_07_23.xlsx
+  
+
+#+BEGIN_SRC jupyter-python
+import pandas as pd
+from datetime import datetime
+from datetime import timedelta
+import matplotlib.pyplot as plt
+
+def convert_partial_year(number):
+    year = int(number)
+    d = timedelta(days=(number - year)*365)
+    day_one = datetime(year,1,1)
+    date = d + day_one
+    return date.date()
+
+
+imbie = pd.read_excel('./input/imbie_dataset-2018_07_23.xlsx')\
+    .rename(columns={'Cumulative ice mass change (Gt)':'IMBIE',
+                     'Cumulative ice mass change uncertainty (Gt)':'IMBIE err'})\
+    .drop(columns=['Cumulative sea level contribution (mm)',
+                   'Cumulative sea level contribution uncertainty (mm)'])
+
+imbie.index = pd.to_datetime([convert_partial_year(_) for _ in imbie['Year']])
+imbie = imbie.drop(columns='Year')
+
+# imbie = imbie.resample('1D').interpolate(dim='time').resample('YS').mean()
+imbie = imbie.resample('YS').mean()
+
+
+
+kw = {'parse_dates':True, 'index_col':0}
+SH_ice = pd.read_csv('./input/SH_seaice_cumul_1994_2017_annual.csv', names=['Antarctic Sea Ice'], **kw)
+shelf_calving = pd.read_csv('./input/iceshelves_calving_cumul_1994_2017_annual.csv', names=['Ice Shelf Calving'], **kw)
+shelf_thinning = pd.read_csv('./input/iceshelves_thinning_cumul_1994_2017_annual.csv', names=['Ice Shelf Thinning'], **kw)
+AQ = pd.read_csv('./input/AIS_cumul_1994_2017_annual.csv', names=['Antarctica'], **kw)
+kw = {'left_index':True, 'right_index':True, 'how':'outer'}
+S2021 = SH_ice.merge(shelf_calving, **kw)\
+           .merge(shelf_thinning, **kw)\
+           .merge(AQ, **kw)
+S2021.index.name = 'Date'
+# S2021 = S2021.sum(axis='columns')
+# S2021.name = 'Slater 2021'
+# S2021 = pd.read_csv('./input/AIS_cumul_1994_2017_annual.csv', names=['Slater 2021'], **kw)
+
+
+df = imbie.merge(S2021, left_index=True, right_index=True, how='outer')
+df.index.name = 'Date'
+
+for _ in df.columns: # extend by 1 year for plotting w/ 'step'
+    df.loc[df[_].dropna().index[-1] + pd.offsets.DateOffset(years=1),_] = df[_].dropna().iloc[-1]
+
+fig, (ax, ax2, ax3) = plt.subplots(nrows=3, figsize=(4,7))
+kw = {'drawstyle':'steps'}
+(df['IMBIE']).diff().plot(ax=ax, **kw)
+(df['Antarctica']).diff().plot(ax=ax, **kw)
+ax.set_ylabel('Annual\nmass change [Gt]')
+(df['IMBIE'] - df['Antarctica']).diff().plot(ax=ax, linestyle='--', color='k', alpha=0.5, **kw)
+
+df[['IMBIE','Antarctica']]\
+    .rename(columns={'Antarctica':'Slater 2021 (AQ)'})\
+    .plot(ax=ax2, **kw)
+_ = ax2.set_ylabel('Cumulative\nmass change [Gt]')
+ax2r = ax2.twinx()
+ax2r.set_ylim(np.array(ax2.get_ylim()).astype(float)/-362)
+ax2r.set_ylabel('SLR [mm]')
+
+df[['Antarctica']]\
+    .rename(columns={'Antarctica':'AQ only (grounded)'})\
+    .plot(ax=ax3, **kw)
+df[['Antarctica',
+    'Antarctic Sea Ice',
+    'Ice Shelf Calving',
+    'Ice Shelf Thinning'
+    ]]\
+    .sum(axis='columns')\
+    [:'2015-12-31']\
+    .plot(ax=ax3, color='green', **kw)
+ax3.legend(['Grounded only (middle panel)','SH SI + IS Calv + IC Thin + AQ'], fontsize=8)
+_ = ax3.set_ylabel('Cumulative\nfreshwater mass [Gt]')
+#+END_SRC
+
+#+RESULTS:
+[[file:./.ob-jupyter/df266fe8559ade84af49bf16a4bf65c8690edc4e.png]]
