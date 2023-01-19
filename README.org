@@ -1,5 +1,6 @@
 * Table of contents                               :toc_2:noexport:
 - [[#introduction][Introduction]]
+- [[#slater-et-al-fig-4][Slater /et al./ Fig. 4]]
 - [[#greenland][Greenland]]
   - [[#fetch-historical-observations][Fetch historical observations]]
   - [[#process-to-modele-format][Process to ModelE format]]
@@ -12,6 +13,56 @@ This workbook computes freshwater anomaly from Greenland and Antarctica for the 
 + Anomaly is defined as mass loss since 1990
 + Temporal resolution is annual
 + Spatially, ModelE distributes a single value according to a 'distribution field' - a floating point mask that sums to 1.
+
+* Slater /et al./ Fig. 4
+
++ See https://doi.org/10.5194/tc-15-233-2021
++ Data shared via email (pers. comm.)
+
+#+BEGIN_SRC jupyter-python
+import pandas as pd
+
+kw = {'parse_dates':True, 'index_col':0}
+SH_ice = pd.read_csv('./input/SH_seaice_cumul_1994_2017_annual.csv', names=['Antarctic Sea Ice'], **kw)
+NH_ice = pd.read_csv('./input/NH_seaice_cumul_1994_2017_annual.csv', names=['Arctic Sea Ice'], **kw)
+shelf_calving = pd.read_csv('./input/iceshelves_calving_cumul_1994_2017_annual.csv', names=['Ice Shelf Calving'], **kw)
+shelf_thinning = pd.read_csv('./input/iceshelves_thinning_cumul_1994_2017_annual.csv', names=['Ice Shelf Thinning'], **kw)
+AQ = pd.read_csv('./input/AIS_cumul_1994_2017_annual.csv', names=['Antarctica'], **kw)
+GL = pd.read_csv('./input/GrIS_cumul_1994_2017_annual.csv', names=['Greenland'], **kw)
+glacier = pd.read_csv('./input/Glacier_cumul_1994_2017_annual.csv', names=['Glaciers'], **kw)
+
+kw = {'left_index':True, 'right_index':True, 'how':'outer'}
+df = SH_ice.merge(NH_ice, **kw)\
+           .merge(shelf_calving, **kw)\
+           .merge(shelf_thinning, **kw)\
+           .merge(AQ, **kw)\
+           .merge(GL, **kw)\
+           .merge(glacier, **kw)
+df.index.name = 'Date'
+
+# df.plot.area() # NO
+# Split positive and negative and plot separately but visually combined
+# https://stackoverflow.com/questions/52872938/stacked-area-plot-in-python-with-positive-and-negative-values
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots()
+cm = 'GnBu'
+df_neg, df_pos = df.clip(upper=0), df.clip(lower=0)
+df_pos.plot.area(ax=ax, stacked=True, linewidth=0., cmap=cm)
+ax.set_prop_cycle(None)
+df_neg.plot.area(ax=ax, stacked=True, linewidth=0., legend=False, cmap=cm)
+ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
+plt.hlines(0, 0, 1E3, color='k', linewidth=1, alpha=0.33, linestyles='dashed')
+
+plt.savefig('./fig/slater_2021_fig4.png', dpi=150)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+: /home/kdm/local/miniconda3/envs/ds/lib/python3.8/site-packages/pandas/plotting/_matplotlib/core.py:1437: UserWarning: Attempting to set identical bottom == top == 0.0 results in singular transformations; automatically expanding.
+:   ax.set_ylim(None, 0)
+[[file:./.ob-jupyter/e800dd8d7ee08532ba0a7da1d4803d95e13cb771.png]]
+:END:
+
 
 * Greenland
 
