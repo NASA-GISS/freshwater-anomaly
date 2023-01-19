@@ -1,5 +1,9 @@
 * Table of contents                               :toc_2:noexport:
 - [[#introduction][Introduction]]
+- [[#greenland][Greenland]]
+  - [[#fetch-historical-observations][Fetch historical observations]]
+  - [[#process-to-modele-format][Process to ModelE format]]
+- [[#antarctica][Antarctica]]
 
 * Introduction
 
@@ -9,3 +13,72 @@ This workbook computes freshwater anomaly from Greenland and Antarctica for the 
 + Temporal resolution is annual
 + Spatially, ModelE distributes a single value according to a 'distribution field' - a floating point mask that sums to 1.
 
+* Greenland
+
+Greenland mass loss comes from historical observations and future simulations.
+
+Historical:
++ Paper: Mankoff /et al./ 2021; https://doi.org/10.5194/essd-13-5001-2021
++ Data: https://doi.org/10.22008/FK2/OHI23Z v439
+
+** Fetch historical observations
+
+#+BEGIN_SRC bash
+mkdir input
+wget -nc  https://dataverse.geus.dk/api/access/datafile/:persistentId?persistentId=doi:10.22008/FK2/OHI23Z/NBMCEK -O ./input/mankoff_2021.csv
+#+END_SRC
+
+#+RESULTS:
+
+** Process to ModelE format
+
+#+BEGIN_SRC jupyter-python
+import pandas as pd
+df = pd.read_csv('./input/mankoff_2021.csv',
+                 parse_dates = True,
+                 index_col = 0)
+
+df = df.loc['1990-01-01':'2020-12-31']
+df = df.resample('YS').sum()
+df = df['MB']
+df
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+time
+1990-01-01   -138.730546
+1991-01-01    -78.035251
+1992-01-01     86.510696
+1993-01-01    -91.168942
+1994-01-01   -113.813365
+1995-01-01   -212.258811
+1996-01-01    131.861276
+1997-01-01      7.228484
+1998-01-01   -242.034055
+1999-01-01    -47.090412
+2000-01-01    -77.221410
+2001-01-01    -26.031650
+2002-01-01   -142.376845
+2003-01-01   -167.267936
+2004-01-01   -166.197877
+2005-01-01   -168.408093
+2006-01-01   -239.836278
+2007-01-01   -257.300333
+2008-01-01   -199.784137
+2009-01-01   -241.123712
+2010-01-01   -374.126750
+2011-01-01   -330.186274
+2012-01-01   -425.403462
+2013-01-01   -100.150906
+2014-01-01   -182.195958
+2015-01-01   -213.177325
+2016-01-01   -255.469501
+2017-01-01   -101.391264
+2018-01-01    -72.974441
+2019-01-01   -411.930477
+2020-01-01   -173.929899
+Freq: AS-JAN, Name: MB, dtype: float64
+#+end_example
+
+* Antarctica
