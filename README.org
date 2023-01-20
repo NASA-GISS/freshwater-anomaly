@@ -1,15 +1,59 @@
-* Table of contents                               :toc_2:noexport:
+#+TITLE: Freshwater Anomalies
+#+AUTHOR: K. D. Mankoff
+
+#+EMAIL:  ken.mankoff@nasa.gov
+#+DATE: \tiny{ {{{time(%Y-%m-%d)}}} version:\input{|"git describe --always --dirty='*'"} } 
+
+# version:\input{|"git describe --always --dirty='*'"}}}}}
+# #+DATE: \tiny{2020-02-05} @@latex:\\@@ { \tiny version:\input{|"git describe --always --dirty='*'"}}
+
+#+MACRO: NEWLINE @@latex:\\@@ @@html:<br>@@
+#+MACRO: SKIPLINE @@latex:\\\vspace{\baselineskip}@@
+
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:2 num:nil ^:{} toc:nil
+
+#+EXCLUDE_TAGS: noexport
+#+ARCHIVE: ::* Archive
+
+#+PROPERTY: header-args :eval no-export :noweb yes
+# #+PROPERTY: header-args:jupyter-python :session MC-LOB :eval no-export :noweb yes :exports results :results raw drawer
+# #+PROPERTY: header-args:jupyter-python+ :var datadir="/home/kdm/projects/freshwater/freshwater/runoff/"
+
+* COMMENT Table of contents                       :toc_2:noexport:
 - [[#introduction][Introduction]]
-- [[#questions][Questions]]
-- [[#slater-et-al-2021-fig-4][Slater /et al./ 2021 Fig. 4]]
-- [[#mankoff-et-al-2021][Mankoff /et al./ 2021]]
+  - [[#summary][Summary]]
+  - [[#questions][Questions]]
+  - [[#global-ice-mass-change][Global ice mass change]]
+  - [[#slater-et-al-2021-fig-4-recreation][Slater /et al./ 2021 Fig. 4 recreation]]
+  - [[#issues][Issues]]
+- [[#greenlandic-grounded-ice][Greenlandic grounded ice]]
+  - [[#mankoff-et-al-2021][Mankoff /et al./ 2021]]
   - [[#fetch-historical-observations][Fetch historical observations]]
   - [[#compare-mankoff-2021--slater-2021][Compare Mankoff 2021 & Slater 2021]]
   - [[#process-to-modele-format][Process to ModelE format]]
+- [[#greenlandic-peripheral-glaciers][Greenlandic peripheral glaciers]]
+  - [[#greenlandic-peripheral-glaciers-1][Greenlandic Peripheral glaciers]]
+- [[#arctic-sea-ice][Arctic sea ice]]
+  - [[#arctic-sea-ice-1][Arctic sea ice]]
 - [[#antarctica][Antarctica]]
-  - [[#compare-imbie-2018--slater-2021][Compare IMBIE 2018 & Slater 2021]]
+  - [[#imbie][IMBIE]]
+  - [[#imbie-vs-slater-et-al-2021][IMBIE vs Slater /et al./ 2021]]
+- [[#appendix][Appendix]]
+  - [[#references][References]]
+  - [[#about-this-document][About This Document]]
+- [[#latex-header][LaTeX Header]]
+  - [[#beamer][Beamer]]
+  - [[#references-1][References]]
+  - [[#hyperref][Hyperref]]
+  - [[#tweak-references][Tweak References]]
+  - [[#background-block][Background Block]]
+- [[#local-variables][Local Variables]]
 
 * Introduction
+** Summary
 
 This workbook computes freshwater anomaly from Greenland and Antarctica for the NASA GISS ModelE.
 
@@ -17,19 +61,38 @@ This workbook computes freshwater anomaly from Greenland and Antarctica for the 
 + Temporal resolution is annual
 + Spatially, ModelE distributes a single value according to a 'distribution field' - a floating point mask that sums to 1.
 
-* Questions
+** Questions
 
-+ [ ] Should NH anomaly include Slater 2021 "Arctic Sea Ice"?
++ [ ] Should NH anomaly include Arctic Sea Ice change?
   + [ ] If so, on what spatial distribution (mask)?
 + [ ] Should SH anomaly include "Antarctic Sea Ice"?
   + [ ] If so, on what spatial distribution (mask)?
 
-* Slater /et al./ 2021 Fig. 4
+** Global ice mass change
 
-+ Paper https://doi.org/10.5194/tc-15-233-2021
+citet:slater_2021 track global ice mass change from 1994 through 2017 including floating and grounded.
+
++ Paper: https://doi.org/10.5194/tc-15-233-2021
 + Data: Shared via email (pers. comm.)
 
-#+BEGIN_SRC jupyter-python
+** Slater /et al./ 2021 Fig. 4 recreation
+*** Original                                               :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
+
+**** Original
+
+[[./fig/slater_2021_fig4_orig.png]]
+
+
+*** Recreation                                             :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
+**** Recreation
+
+#+BEGIN_SRC jupyter-python :results file :exports results
 import pandas as pd
 
 kw = {'parse_dates':True, 'index_col':0}
@@ -59,8 +122,9 @@ cm = 'GnBu'
 df_neg, df_pos = df.clip(upper=0), df.clip(lower=0)
 df_pos.plot.area(ax=ax, stacked=True, linewidth=0., cmap=cm)
 ax.set_prop_cycle(None)
+ax.set_ylim([-30000, 5000])
 df_neg.plot.area(ax=ax, stacked=True, linewidth=0., legend=False, cmap=cm)
-ax.set_ylim([df_neg.sum(axis=1).min(), df_pos.sum(axis=1).max()])
+ax.set_ylim([-30000, 5000])
 plt.hlines(0, 0, 1E3, color='k', linewidth=1, alpha=0.33, linestyles='dashed')
 ax.set_ylabel('Mass change [Gt]')
 
@@ -68,19 +132,26 @@ plt.savefig('./fig/slater_2021_fig4.png', dpi=150)
 #+END_SRC
 
 #+RESULTS:
-:RESULTS:
-: /home/kdm/local/miniconda3/envs/ds/lib/python3.8/site-packages/pandas/plotting/_matplotlib/core.py:1437: UserWarning: Attempting to set identical bottom == top == 0.0 results in singular transformations; automatically expanding.
-:   ax.set_ylim(None, 0)
-[[file:./.ob-jupyter/04392aefad0c27e3c1b48a63cd861d0d06adb585.png]]
-:END:
+[[file:./.ob-jupyter/8924bac88c2c80f0af2e9f1a129c0909edec3f80.png]]
 
 
-* Mankoff /et al./ 2021
 
-+ Paper: Mankoff /et al./ 2021; https://doi.org/10.5194/essd-13-5001-2021
+** Issues
+
++ Although citet:slater_2021 provide global ice mass change, the data is only from 1994 through 2017
++ We will use other products with longer records, but use citet:slater_2021 for QC
+
+* Greenlandic grounded ice
+** Mankoff /et al./ 2021
+
+citet:mankoff_2021 provide *main ice sheet* mass loss from 1840 through next week.
+
+{{{NEWLINE}}}
+
++ Paper: https://doi.org/10.5194/essd-13-5001-2021
 + Data: https://doi.org/10.22008/FK2/OHI23Z v439
 
-** Fetch historical observations
+** Fetch historical observations                        :noexport:
 
 #+BEGIN_SRC bash
 mkdir input
@@ -90,8 +161,11 @@ wget -nc  https://dataverse.geus.dk/api/access/datafile/:persistentId?persistent
 #+RESULTS:
 
 ** Compare Mankoff 2021 & Slater 2021
-
-#+BEGIN_SRC jupyter-python
+*** Figure                                                 :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
+#+BEGIN_SRC jupyter-python :exports results
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -118,17 +192,22 @@ df.plot(ax=ax2, **kw)
 _ = ax2.set_ylabel('Cumulative\nmass change [Gt]')
 axr = ax2.twinx()
 axr.set_ylim(np.array(ax2.get_ylim()).astype(float)/-362)
-axr.set_ylabel('SLR [mm]')
+_ = axr.set_ylabel('SLR [mm]')
 #+END_SRC
 
 #+RESULTS:
-:RESULTS:
-: Text(0, 0.5, 'SLR [mm]')
 [[file:./.ob-jupyter/98045487aa2c373c96c248d667e8a1cf1ca6a1e3.png]]
+
+
+*** Text                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
 :END:
 
++ Upper panel: annual change (and difference between two products [dashed gray])
++ Lower panel: cumulative
 
-** Process to ModelE format
+** Process to ModelE format                             :noexport:
 
 #+BEGIN_SRC jupyter-python
 import pandas as pd
@@ -180,12 +259,47 @@ Freq: AS-JAN, Name: MB, dtype: float64
 #+end_example
 
 
+* Greenlandic peripheral glaciers
+** Greenlandic Peripheral glaciers
+
++ Need to determine where Greenlandic peripheral glaciers are in the citet:slater_2021 data
+  + [ ] Greenland?
+  + [ ] Glaciers?
++ If needed, can include as a scaling factor from citet:mankoff_2021 main ice sheet mass balance
+
+* Arctic sea ice
+** Arctic sea ice
+
++ Provided by citet:slater_2021
++ Does it need to be included in the anomaly product
+  + Does it need its own distribution mask?
+
 * Antarctica
 
-** Compare IMBIE 2018 & Slater 2021
+** IMBIE
 
++ IMBIE citep:the-imbie-team_2018 has a longer records: 1992 through 2018 (and ongoing updates)
 + http://imbie.org/data-downloads/
 
+** IMBIE vs Slater /et al./ 2021
+
+*** Text                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
+
+Bottom panel
++ Blue line is same as upper panel
++ Green line is:
+  + Blue line (Grounded ice) +
+  + Southern hemisphere sea ice +
+  + Ice shelf calving +
+  + Ice shelf thinning
+
+*** Figure                                                 :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
 #+BEGIN_SRC bash
 wget -q http://imbie.org/data-files/imbie_dataset-2018_07_23.xlsx
 mv imbie_dataset-2018_07_23.xlsx ./input
@@ -195,8 +309,7 @@ md5sum ./input/imbie_dataset-2018_07_23.xlsx
 #+RESULTS:
 : 0428261d001f8e3b8a18d43e6f29b629  ./input/imbie_dataset-2018_07_23.xlsx
   
-
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC jupyter-python :exports results
 import pandas as pd
 from datetime import datetime
 from datetime import timedelta
@@ -275,5 +388,273 @@ ax3.legend(['Grounded only (middle panel)','SH SI + IS Calv + IC Thin + AQ'], fo
 _ = ax3.set_ylabel('Cumulative\nfreshwater mass [Gt]')
 #+END_SRC
 
+#+ATTR_LATEX: :height 0.9\textheight
 #+RESULTS:
 [[file:./.ob-jupyter/df266fe8559ade84af49bf16a4bf65c8690edc4e.png]]
+
+
+
+* Appendix                                            :B_appendix:
+:PROPERTIES:
+:BEAMER_env: appendix
+:END:
+** References
+:PROPERTIES:
+:BEAMER_opt: allowframebreaks,label=
+:END:
+
+#+LATEX_HEADER_EXTRA: \renewcommand*{\bibfont}{\small}
+\printbibliography[heading=none]
+
+** About This Document
+# :PROPERTIES:
+# :BEAMER_opt: shrink=10
+# :END:
+
+This document is an Emacs Org Mode plain-text file with code and text
+embedded. If you are viewing:
++ A PDF, HTML, or DOC file, then it was generated by exporting from Org. Not all of the Org parts (code, results, comments, etc.) were exported. The Org source file is available upon request, and may be embedded in the PDF. You can access files embedded in PDF files with from within your PDF viewer.
++ A file with an ~org~ extension in something other than Emacs, then you are seeing the canonical version and the full source, but without any syntax highlighting, document structure, or the ability to execute the code blocks.
++ An ~Org~ file within Emacs, then this is the canonical version. You should be able to fully interact and reproduce the contents of this document, although it may require 3rd-party applications (Python, etc.) and a similar Emacs configuration. This is available upon request.
+
+* LaTeX Header                                          :noexport:
+** Beamer
+
+#+STARTUP: beamer
+#+LaTeX_CLASS_OPTIONS: [presentation, smaller, compress, aspectratio=169]
+#+COLUMNS: %45ITEM %10BEAMER_env(Env) %10BEAMER_act(Act) %4BEAMER_col(Col) %8BEAMER_opt(Opt)
+#+PROPERTY: BEAMER_col_ALL 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.0 :ETC
+
+*** Title Page
+
+#+BEAMER_HEADER: \subtitle{GL \& AQ}
+#+BEAMER_HEADER: \institute[]{NASA GISS}
+
+#+BEAMER_HEADER: \titlegraphic{\includegraphics[height=1.0cm]{/home/kdm/Documents/templates/logos/NASA.png}}
+
+# #+BEAMER_HEADER: \logo{\includegraphics[height=1.0cm]{/home/kdm/Documents/templates/logos/NASA.png}}
+
+*** Theme
+
+#+BEAMER_THEME: Frankfurt
+#+BEAMER_COLOR_THEME: seagull
+
+#+BEAMER_HEADER: \setbeamertemplate{navigation symbols}{}
+
+#+BEAMER_HEADER: \setbeamercolor*{block title alerted}{bg=yellow!50}
+#+BEAMER_HEADER: \setbeamercolor*{block body alerted}{bg=yellow!30}
+#+BEAMER_HEADER: \setbeamertemplate{blocks}[rounded][shadow=true]
+
+#+BEAMER_HEADER: \setbeamercovered{transparent=30} % preview hidden content
+# #+BEAMER_HEADER: \setbeamercovered{invisible}
+
+
+#+BEAMER_HEADER: \setbeamertemplate{footline}{}
+
+#+BEAMER_HEADER: \setbeamertemplate{frametitle}{%
+#+BEAMER_HEADER:   \nointerlineskip
+#+BEAMER_HEADER:     \begin{beamercolorbox}[sep=0.1cm,wd=\paperwidth,leftskip=.2cm,rightskip=0cm]{frametitle}%
+#+BEAMER_HEADER:       \usebeamerfont{frametitle}\usebeamercolor[fg]{frametitle}\insertframetitle\\
+#+BEAMER_HEADER:       \usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\insertframesubtitle
+#+BEAMER_HEADER:     \end{beamercolorbox}%
+#+BEAMER_HEADER: }
+
+#+BEAMER_HEADER: \usepackage{tikz}
+#+BEAMER_HEADER: \addtobeamertemplate{frametitle}{}{%
+#+BEAMER_HEADER: \begin{tikzpicture}[remember picture,overlay]
+#+BEAMER_HEADER:   \node[anchor=south east,yshift=0pt] at (current page.south east) {\includegraphics[height=1cm]{/home/kdm/Documents/templates/logos/NASA.png}};
+#+BEAMER_HEADER: \end{tikzpicture}\vspace{-0.4cm}}
+
+#+BEAMER_HEADER: \addtobeamertemplate{frametitle}{}{\tikz[overlay, remember picture] \node[anchor=south west,yshift=1pt] at (current page.south west){{\tiny\textcolor{gray}{\insertframenumber}}};}
+
+# #+BEAMER_HEADER: \setbeamerfont{headline}{size=\small}
+#+BEAMER_HEADER: \setbeamerfont{frametitle}{size=\Large}
+# \tiny \scriptsize \footnotesize \small \normalsize \large \Large \huge \Huge
+
+# (setq org-latex-listings t)
+
+# #+INCLUDE: "./listings.org"
+# #+LaTeX: \setbeamercolor*{block title verbatim}{bg=yellow!50}
+# #+LaTeX: \setbeamercolor*{block body verbatim}{bg=yellow!30}
+
+*** COMMENT Presenter Notes
+
+
+%% Presenter Notes
+#+BEAMER_HEADER: \usepackage{pgfpages}
+#+BEAMER_HEADER: \setbeameroption{show notes on second screen}
+# #+BEAMER_HEADER: \setbeameroption{show notes on second screen=left}
+# #+BEAMER_HEADER: \setbeamertemplate{note page}[plain]
+
+# #+BEAMER_HEADER: \usepackage{handoutWithNotes}
+# #+BEAMER_HEADER: \pgfpagesuselayout{4 on 1 with notes}[a4paper,border shrink=5mm]
+
+*** Other
+
+#+BEAMER_HEADER: \usepackage{multimedia}
+#+BEAMER_HEADER: \usepackage{lxfonts}
+#+BEAMER_HEADER: \usefonttheme{professionalfonts}
+
+#+BEAMER_HEADER: \newcommand\bgimage[1]{%
+#+BEAMER_HEADER: \begin{backgroundblock}{-1mm}{0mm}
+#+BEAMER_HEADER: \includegraphics[height=\paperheight]{#1}
+#+BEAMER_HEADER: \end{backgroundblock}}
+
+#+BEAMER_HEADER: \newcommand\bgimagewide[1]{%
+#+BEAMER_HEADER: \begin{backgroundblock}{-1mm}{15mm}
+#+BEAMER_HEADER: \includegraphics[width=\paperwidth]{#1}
+#+BEAMER_HEADER: \end{backgroundblock}}
+
+#+BEAMER_HEADER: \usepackage[outline]{contour}
+#+BEAMER_HEADER: \usepackage[absolute,overlay]{textpos}
+#+BEAMER_HEADER: \newcommand\footertext[1]{%
+#+BEAMER_HEADER:   \begin{textblock*}{\paperwidth}(1em,0.95\paperheight)
+#+BEAMER_HEADER:     \contour{red}\protect\textcolor{black}{\small{#1}}
+#+BEAMER_HEADER:   \end{textblock*}}
+
+# #+LATEX_HEADER: \newcommand*{\TakeFourierOrnament}[1]{{%
+# #+LATEX_HEADER: \fontencoding{U}\fontfamily{futs}\selectfont\char#1}}
+# #+LATEX_HEADER: \newcommand*{\danger}{\TakeFourierOrnament{66}}
+#+LATEX_HEADER: \usepackage{fontawesome}
+
+** References
+
+#+LATEX_HEADER_EXTRA:%\usepackage[bibstyle=authoryear,firstinits=true,maxbibnames=99]{biblatex}
+#+LATEX_HEADER_EXTRA: \usepackage[hyperref=true,
+#+LATEX_HEADER_EXTRA:             %sorting=none, 
+#+LATEX_HEADER_EXTRA:             sorting=nyt,
+#+LATEX_HEADER_EXTRA:             %style=numeric, 
+#+LATEX_HEADER_EXTRA:             style=authoryear,
+#+LATEX_HEADER_EXTRA:             %defernumbers=true, 
+#+LATEX_HEADER_EXTRA:             firstinits=true, 
+#+LATEX_HEADER_EXTRA:             uniquename=false,
+#+LATEX_HEADER_EXTRA:             uniquelist=false,
+#+LATEX_HEADER_EXTRA:             %uniquelist=minyear,
+#+LATEX_HEADER_EXTRA:             maxnames=99, 
+#+LATEX_HEADER_EXTRA:             backend=biber,
+#+LATEX_HEADER_EXTRA:             bibenconding=utf8,
+#+LATEX_HEADER_EXTRA:             maxcitenames=2]{biblatex}
+#+LATEX_HEADER_EXTRA:\addbibresource{/home/kdm/Documents/Papers/library.bib}
+#+LATEX_HEADER_EXTRA:\addbibresource{/home/kdm/Documents/Papers/software.bib}
+#+LATEX_HEADER_EXTRA:\addbibresource{/home/kdm/Documents/Papers/data.bib}
+#+LATEX_HEADER_EXTRA: \renewbibmacro{in:}{}
+#+LATEX_HEADER_EXTRA: \renewcommand*{\bibfont}{\footnotesize}
+
+# biber <texfile><.NOEXT> --output_format bibtex
+
+#+LATEX_HEADER_EXTRA: \usepackage{xpatch}
+#+LATEX_HEADER_EXTRA: \xpatchbibmacro{name:andothers}{%
+#+LATEX_HEADER_EXTRA:   \bibstring{andothers}%
+#+LATEX_HEADER_EXTRA: }{%
+#+LATEX_HEADER_EXTRA:   \bibstring[\emph]{andothers}%
+#+LATEX_HEADER_EXTRA: }{}{}
+
+# http://tex.stackexchange.com/a/5779/360
+#+LATEX_HEADER_EXTRA: % Don't print URL if DOI field exists
+#+LATEX_HEADER_EXTRA: \DeclareFieldFormat{url}{%
+#+LATEX_HEADER_EXTRA:   \iffieldundef{doi}{%
+#+LATEX_HEADER_EXTRA:     \mkbibacro{URL}\addcolon\space\url{#1}%
+#+LATEX_HEADER_EXTRA:   }{%
+#+LATEX_HEADER_EXTRA:   }%
+#+LATEX_HEADER_EXTRA: }
+#+LATEX_HEADER_EXTRA: % Don't print URL if DOI field exists
+#+LATEX_HEADER_EXTRA: \DeclareFieldFormat{urldate}{%
+#+LATEX_HEADER_EXTRA:   \iffieldundef{doi}{%
+#+LATEX_HEADER_EXTRA:     \mkbibparens{\bibstring{urlseen}\space#1}%
+#+LATEX_HEADER_EXTRA:   }{%
+#+LATEX_HEADER_EXTRA:   }%
+#+LATEX_HEADER_EXTRA: }
+
+#+LATEX_HEADER_EXTRA: \renewbibmacro*{journal+issuetitle}{%
+#+LATEX_HEADER_EXTRA: \usebibmacro{journal}%
+#+LATEX_HEADER_EXTRA: \setunit*{\addspace}%
+#+LATEX_HEADER_EXTRA: \iffieldundef{series}
+#+LATEX_HEADER_EXTRA: {}
+#+LATEX_HEADER_EXTRA: {\newunit
+#+LATEX_HEADER_EXTRA: \printfield{series}%
+#+LATEX_HEADER_EXTRA: \setunit{\addspace}}%
+#+LATEX_HEADER_EXTRA: \usebibmacro{issue+date}%
+#+LATEX_HEADER_EXTRA: \setunit{\addcomma\space}%
+#+LATEX_HEADER_EXTRA: \usebibmacro{volume+number+eid}%
+#+LATEX_HEADER_EXTRA: \setunit{\addcolon\space}%
+#+LATEX_HEADER_EXTRA: \usebibmacro{issue}%
+#+LATEX_HEADER_EXTRA: \newunit}
+
+#+LATEX_HEADER_EXTRA: \newbibmacro*{issue+date}{%
+#+LATEX_HEADER_EXTRA: \iffieldundef{issue}
+#+LATEX_HEADER_EXTRA: {. \usebibmacro{date}}
+#+LATEX_HEADER_EXTRA: {\printfield{issue}%
+#+LATEX_HEADER_EXTRA: \setunit*{\addspace}%
+#+LATEX_HEADER_EXTRA: \usebibmacro{date}}%
+#+LATEX_HEADER_EXTRA: \newunit}
+
+#+LATEX_HEADER_EXTRA: \renewbibmacro*{volume+number+eid}{%
+#+LATEX_HEADER_EXTRA: \printfield{volume}%
+#+LATEX_HEADER_EXTRA: \setunit*{\addnbspace}% NEW (optional); there's also #+LATEX_HEADER_EXTRA: \addnbthinspace
+#+LATEX_HEADER_EXTRA: \printfield{number}%
+#+LATEX_HEADER_EXTRA: \setunit{\addcomma\space}%
+#+LATEX_HEADER_EXTRA: \printfield{eid}}
+#+LATEX_HEADER_EXTRA: \DeclareFieldFormat[article]{number}{\mkbibparens{#1}}
+
+#+LATEX_HEADER_EXTRA: \DeclareFieldFormat{pages}{#1}
+
+** Hyperref
+#+LATEX_HEADER_EXTRA:  %\usepackage{datetime}\renewcommand{\dateseparator}{-}
+#+LATEX_HEADER_EXTRA:  \usepackage{xspace} % smart spaces
+#+LATEX_HEADER_EXTRA:  \hypersetup{
+#+LATEX_HEADER_EXTRA:    colorlinks=true,       % links are colored
+#+LATEX_HEADER_EXTRA:    urlcolor=blue,    % color of external links
+#+LATEX_HEADER_EXTRA:    linkcolor=blue,   % color of internal links
+#+LATEX_HEADER_EXTRA:    citecolor=gray,   % color of links to bibliography
+#+LATEX_HEADER_EXTRA:    draft=false, % link even in draft mode
+#+LATEX_HEADER_EXTRA:    bookmarksopen=true, % ?
+#+LATEX_HEADER_EXTRA:    pdfdisplaydoctitle=true}
+#+LATEX_HEADER_EXTRA:  \renewcommand{\textfraction}{0.05}
+#+LATEX_HEADER_EXTRA:  \renewcommand{\topfraction}{0.8}
+#+LATEX_HEADER_EXTRA:  \renewcommand{\bottomfraction}{0.8}
+#+LATEX_HEADER_EXTRA:  \renewcommand{\floatpagefraction}{0.75}
+
+** Tweak References
+
+# Make citations smaller 
+# #+LATEX_HEADER_EXTRA: \let\realtextcite=\textcite
+# #+LATEX_HEADER_EXTRA: \renewcommand{\textcite}[1]{{\scriptsize\textcolor{gray}{\realtextcite{#1}}}}
+# #+LATEX_HEADER_EXTRA: \let\realautocite=\autocite
+# #+LATEX_HEADER_EXTRA: \renewcommand{\autocite}[1]{{\scriptsize\textcolor{gray}{\realautocite{#1}}}}
+
+#+LATEX_HEADER_EXTRA: \let\realtextcite=\textcite
+#+LATEX_HEADER_EXTRA: \renewcommand{\textcite}[1]{{\textcolor{gray}{\realtextcite{#1}}}}
+#+LATEX_HEADER_EXTRA: \let\realautocite=\autocite
+#+LATEX_HEADER_EXTRA: \renewcommand{\autocite}[1]{{\textcolor{gray}{\realautocite{#1}}}}
+
+
+** Background Block
+
+# https://tex.stackexchange.com/questions/133955/beamer-how-to-place-images-behind-text-z-order
+# % beamer: How to place images behind text (z-order) (http://tex.stackexchange.com/a/134311)
+#+LATEX_HEADER_EXTRA: \makeatletter
+#+LATEX_HEADER_EXTRA: \newbox\@backgroundblock
+#+LATEX_HEADER_EXTRA: \newenvironment{backgroundblock}[2]{%
+#+LATEX_HEADER_EXTRA:   \global\setbox\@backgroundblock=\vbox\bgroup%
+#+LATEX_HEADER_EXTRA:     \unvbox\@backgroundblock%
+#+LATEX_HEADER_EXTRA:     \vbox to0pt\bgroup\vskip#2\hbox to0pt\bgroup\hskip#1\relax%
+#+LATEX_HEADER_EXTRA: }{\egroup\egroup\egroup}
+#+LATEX_HEADER_EXTRA: \addtobeamertemplate{background}{\box\@backgroundblock}{}
+#+LATEX_HEADER_EXTRA: \makeatother
+
+# \begin{backgroundblock}{-3mm}{9mm}
+# \includegraphics[height=\textheight]{./fig/Q.png}
+# \end{backgroundblock}
+
+** COMMENT Embedded file
+#+LATEX_HEADER_EXTRA: \usepackage{embedfile}
+#+LATEX_HEADER_EXTRA: \embedfile{\jobname.org}
+
+# \usepackage[main,include]{embedall}
+# \IfFileExists{./\jobname.org}{\embedfile[desc=The original file]{\jobname.org}}{}
+
+* Local Variables                                       :noexport:
+
+# Local Variables:
+# eval: (org-babel-lob-ingest "./lob.org")
+# End:
