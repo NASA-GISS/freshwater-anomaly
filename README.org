@@ -25,12 +25,11 @@
 * COMMENT Table of contents                       :toc_2:noexport:
 - [[#introduction][Introduction]]
   - [[#summary][Summary]]
-  - [[#questions][Questions]]
   - [[#global-ice-mass-change][Global ice mass change]]
-  - [[#slater-et-al-2021-fig-4-recreation][Slater /et al./ 2021 Fig. 4 recreation]]
+  - [[#slater-2021-fig-4-recreation][Slater 2021 Fig. 4 recreation]]
   - [[#issues][Issues]]
 - [[#greenlandic-grounded-ice][Greenlandic grounded ice]]
-  - [[#mankoff-et-al-2021][Mankoff /et al./ 2021]]
+  - [[#mankoff-2021][Mankoff 2021]]
   - [[#fetch-historical-observations][Fetch historical observations]]
   - [[#compare-mankoff-2021--slater-2021][Compare Mankoff 2021 & Slater 2021]]
   - [[#process-to-modele-format][Process to ModelE format]]
@@ -38,9 +37,21 @@
   - [[#greenlandic-peripheral-glaciers-1][Greenlandic Peripheral glaciers]]
 - [[#arctic-sea-ice][Arctic sea ice]]
   - [[#arctic-sea-ice-1][Arctic sea ice]]
+- [[#freshwater-distribution-mask][Freshwater distribution mask]]
+  - [[#introduction-1][Introduction]]
+  - [[#modele-mask][ModelE Mask]]
+  - [[#contents-of-glmelt_4x5ocnnc][Contents of GLMELT_4X5.OCN.nc]]
+  - [[#visualization-of-glmelt_4x5ocnnc][Visualization of GLMELT_4X5.OCN.nc]]
+  - [[#contents-of-glmelt_144x90_gasocnnc][Contents of GLMELT_144X90_gas.OCN.nc]]
+  - [[#visualization-of-glmelt_144x90_gasocnnc][Visualization of GLMELT_144X90_gas.OCN.nc]]
+  - [[#actual-distribution-of-melt-greenland][Actual distribution of melt (Greenland)]]
+  - [[#mask-editing][Mask editing]]
 - [[#antarctica][Antarctica]]
-  - [[#imbie][IMBIE]]
-  - [[#imbie-vs-slater-et-al-2021][IMBIE vs Slater /et al./ 2021]]
+  - [[#imbie-2018][IMBIE 2018]]
+  - [[#imbie-2018-vs-slater-2021][IMBIE 2018 vs Slater 2021]]
+- [[#summary-1][Summary]]
+  - [[#question][Question]]
+  - [[#to-do][To Do]]
 - [[#appendix][Appendix]]
   - [[#references][References]]
   - [[#about-this-document][About This Document]]
@@ -50,6 +61,7 @@
   - [[#hyperref][Hyperref]]
   - [[#tweak-references][Tweak References]]
   - [[#background-block][Background Block]]
+  - [[#code-export][Code export]]
 - [[#local-variables][Local Variables]]
 
 * Introduction
@@ -61,13 +73,6 @@ This workbook computes freshwater anomaly from Greenland and Antarctica for the 
 + Temporal resolution is annual
 + Spatially, ModelE distributes a single value according to a 'distribution field' - a floating point mask that sums to 1.
 
-** Questions
-
-+ [ ] Should NH anomaly include Arctic Sea Ice change?
-  + [ ] If so, on what spatial distribution (mask)?
-+ [ ] Should SH anomaly include "Antarctic Sea Ice"?
-  + [ ] If so, on what spatial distribution (mask)?
-
 ** Global ice mass change
 
 citet:slater_2021 track global ice mass change from 1994 through 2017 including floating and grounded.
@@ -75,7 +80,7 @@ citet:slater_2021 track global ice mass change from 1994 through 2017 including 
 + Paper: https://doi.org/10.5194/tc-15-233-2021
 + Data: Shared via email (pers. comm.)
 
-** Slater /et al./ 2021 Fig. 4 recreation
+** Slater 2021 Fig. 4 recreation
 *** Original                                               :BMCOL:
 :PROPERTIES:
 :BEAMER_col: 0.5
@@ -142,11 +147,11 @@ plt.savefig('./fig/slater_2021_fig4.png', dpi=150)
 + We will use other products with longer records, but use citet:slater_2021 for QC
 
 * Greenlandic grounded ice
-** Mankoff /et al./ 2021
+** Mankoff 2021
 
 citet:mankoff_2021 provide *main ice sheet* mass loss from 1840 through next week.
 
-{{{NEWLINE}}}
+{{{SKIPLINE}}}
 
 + Paper: https://doi.org/10.5194/essd-13-5001-2021
 + Data: https://doi.org/10.22008/FK2/OHI23Z v439
@@ -156,6 +161,8 @@ citet:mankoff_2021 provide *main ice sheet* mass loss from 1840 through next wee
 #+BEGIN_SRC bash
 mkdir input
 wget -nc  https://dataverse.geus.dk/api/access/datafile/:persistentId?persistentId=doi:10.22008/FK2/OHI23Z/NBMCEK -O ./input/mankoff_2021.csv
+
+wget -nc https://dataverse.geus.dk/api/access/datafile/:persistentId?persistentId=doi:10.22008/FK2/OHI23Z/XQHQOB  -O ./input/mankoff_2021.nc
 #+END_SRC
 
 #+RESULTS:
@@ -174,7 +181,7 @@ fig, (ax, ax2) = plt.subplots(nrows=2, figsize=(4,5))
 kw = {'parse_dates':True, 'index_col':0}
 S2021 = pd.read_csv('./input/GrIS_cumul_1994_2017_annual.csv', names=['Slater GrIS'], **kw)
 M2021 = pd.read_csv('./input/mankoff_2021.csv', **kw)
-M2021 = M2021['MB'].rename('Mankoff 2021').resample('YS').sum()['1994':'2022-12-31'].cumsum()
+M2021 = M2021['MB'].rename('Mankoff 2021').resample('YS').sum()['1990':'2022-12-31'].cumsum()
 
 df = S2021.merge(M2021, left_index=True, right_index=True, how='outer')
 df.index.name = 'Date'
@@ -183,12 +190,14 @@ for _ in df.columns: # extend by 1 year for plotting w/ 'step'
     df.loc[df[_].dropna().index[-1] + pd.offsets.DateOffset(years=1),_] = df[_].dropna().iloc[-1]
 
 kw = {'drawstyle':'steps'}
-(df['Mankoff 2021']).diff().plot(ax=ax, **kw)
 (df['Slater GrIS']).diff().plot(ax=ax, **kw)
+(df['Mankoff 2021']).diff().plot(ax=ax, **kw)
 ax.set_ylabel('Annual\nmass change [Gt]')
 (df['Mankoff 2021'].diff() - df['Slater GrIS'].diff()).plot(ax=ax, linestyle='--', color='k', alpha=0.5, **kw)
 
-df.plot(ax=ax2, **kw)
+(df['Slater GrIS'] + df['Mankoff 2021'].loc['1994'].values).plot(ax=ax2, **kw)
+df['Mankoff 2021'].plot(ax=ax2, **kw)
+ax2.legend(['Slater 2021','Mankoff 2021'])
 _ = ax2.set_ylabel('Cumulative\nmass change [Gt]')
 axr = ax2.twinx()
 axr.set_ylim(np.array(ax2.get_ylim()).astype(float)/-362)
@@ -196,7 +205,7 @@ _ = axr.set_ylabel('SLR [mm]')
 #+END_SRC
 
 #+RESULTS:
-[[file:./.ob-jupyter/98045487aa2c373c96c248d667e8a1cf1ca6a1e3.png]]
+[[file:./.ob-jupyter/45a68d209381e2ce505acad99c97c85354e3c57c.png]]
 
 
 *** Text                                                   :BMCOL:
@@ -274,14 +283,511 @@ Freq: AS-JAN, Name: MB, dtype: float64
 + Does it need to be included in the anomaly product
   + Does it need its own distribution mask?
 
+* Freshwater distribution mask
+** Introduction
+
++ ModelE distributes Greenlandic melt via a fractional mask (sums to 1)
++ We can use the same mask to distribute the freshwater anomaly
++ However, the anomaly is distributed differently than the baseline
++ For example, Fig. 1 of citet:mankoff_2021 shows the SE (/included below/) has no net mass loss, and no change from <1990 baseline. However, SE should still have an annual baseline meltwater volume flow rate, because winter snowfall is offset by summer melt.
+
+#+ATTR_LATEX: :height 3cm
+[[./fig/mankoff_2021_fig1_orig.png]]
+
+** ModelE Mask
+
++ Probably =GLMELT_4X5.OCN.nc= (ROCKE-3D) or =GLMELT_144X90_gas.OCN.nc= (ModelE)
+  + Source: https://portal.nccs.nasa.gov/GISS_modelE/modelE_input_data/
+
+** Contents of GLMELT_4X5.OCN.nc
+:PROPERTIES:
+:BEAMER_opt: shrink=8
+:END:
+
+#+BEGIN_SRC bash :exports results :results verbatim
+ncdump dat/GLMELT_4X5.OCN.nc | head -n30
+echo "[...]"
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+netcdf GLMELT_4X5.OCN {
+dimensions:
+	lon = 72 ;
+	lat = 46 ;
+variables:
+	float lon(lon) ;
+		lon:units = "degrees_east" ;
+	float lat(lat) ;
+		lat:units = "degrees_north" ;
+	float mask(lat, lon) ;
+data:
+
+ lon = -177.5, -172.5, -167.5, -162.5, -157.5, -152.5, -147.5, -142.5, 
+    -137.5, -132.5, -127.5, -122.5, -117.5, -112.5, -107.5, -102.5, -97.5, 
+    -92.5, -87.5, -82.5, -77.5, -72.5, -67.5, -62.5, -57.5, -52.5, -47.5, 
+    -42.5, -37.5, -32.5, -27.5, -22.5, -17.5, -12.5, -7.5, -2.5, 2.5, 7.5, 
+    12.5, 17.5, 22.5, 27.5, 32.5, 37.5, 42.5, 47.5, 52.5, 57.5, 62.5, 67.5, 
+    72.5, 77.5, 82.5, 87.5, 92.5, 97.5, 102.5, 107.5, 112.5, 117.5, 122.5, 
+    127.5, 132.5, 137.5, 142.5, 147.5, 152.5, 157.5, 162.5, 167.5, 172.5, 
+    177.5 ;
+
+ lat = -89, -86, -82, -78, -74, -70, -66, -62, -58, -54, -50, -46, -42, -38, 
+    -34, -30, -26, -22, -18, -14, -10, -6, -2, 2, 6, 10, 14, 18, 22, 26, 30, 
+    34, 38, 42, 46, 50, 54, 58, 62, 66, 70, 74, 78, 82, 86, 89 ;
+
+ mask =
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+[...]
+#+end_example
+
+
+** Visualization of GLMELT_4X5.OCN.nc
+
+#+BEGIN_SRC jupyter-python :results verbatim :exports results
+import xarray as xr
+ds = xr.open_dataset('./dat/GLMELT_4X5.OCN.nc')
+_ = ds['mask'].plot()
+#+END_SRC
+
+#+ATTR_LATEX: :height 0.9\textheight
+#+RESULTS:
+[[file:./.ob-jupyter/6a36b8a799a828b667fa6c0bd772b99ad930d9ca.png]]
+
+** Contents of GLMELT_144X90_gas.OCN.nc
+:PROPERTIES:
+:BEAMER_opt: shrink=6
+:END:
+
+#+BEGIN_SRC bash :exports results :results verbatim
+ncdump dat/GLMELT_144X90_gas.OCN.nc | head -n40
+echo "[...]"
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+netcdf GLMELT_144X90_gas.OCN {
+dimensions:
+	lon = 144 ;
+	lat = 90 ;
+variables:
+	float lon(lon) ;
+		lon:units = "degrees_east" ;
+	float lat(lat) ;
+		lat:units = "degrees_north" ;
+	float mask(lat, lon) ;
+data:
+
+ lon = -178.75, -176.25, -173.75, -171.25, -168.75, -166.25, -163.75, 
+    -161.25, -158.75, -156.25, -153.75, -151.25, -148.75, -146.25, -143.75, 
+    -141.25, -138.75, -136.25, -133.75, -131.25, -128.75, -126.25, -123.75, 
+    -121.25, -118.75, -116.25, -113.75, -111.25, -108.75, -106.25, -103.75, 
+    -101.25, -98.75, -96.25, -93.75, -91.25, -88.75, -86.25, -83.75, -81.25, 
+    -78.75, -76.25, -73.75, -71.25, -68.75, -66.25, -63.75, -61.25, -58.75, 
+    -56.25, -53.75, -51.25, -48.75, -46.25, -43.75, -41.25, -38.75, -36.25, 
+    -33.75, -31.25, -28.75, -26.25, -23.75, -21.25, -18.75, -16.25, -13.75, 
+    -11.25, -8.75, -6.25, -3.75, -1.25, 1.25, 3.75, 6.25, 8.75, 11.25, 13.75, 
+    16.25, 18.75, 21.25, 23.75, 26.25, 28.75, 31.25, 33.75, 36.25, 38.75, 
+    41.25, 43.75, 46.25, 48.75, 51.25, 53.75, 56.25, 58.75, 61.25, 63.75, 
+    66.25, 68.75, 71.25, 73.75, 76.25, 78.75, 81.25, 83.75, 86.25, 88.75, 
+    91.25, 93.75, 96.25, 98.75, 101.25, 103.75, 106.25, 108.75, 111.25, 
+    113.75, 116.25, 118.75, 121.25, 123.75, 126.25, 128.75, 131.25, 133.75, 
+    136.25, 138.75, 141.25, 143.75, 146.25, 148.75, 151.25, 153.75, 156.25, 
+    158.75, 161.25, 163.75, 166.25, 168.75, 171.25, 173.75, 176.25, 178.75 ;
+
+ lat = -89, -87, -85, -83, -81, -79, -77, -75, -73, -71, -69, -67, -65, -63, 
+    -61, -59, -57, -55, -53, -51, -49, -47, -45, -43, -41, -39, -37, -35, 
+    -33, -31, -29, -27, -25, -23, -21, -19, -17, -15, -13, -11, -9, -7, -5, 
+    -3, -1, 1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31, 33, 
+    35, 37, 39, 41, 43, 45, 47, 49, 51, 53, 55, 57, 59, 61, 63, 65, 67, 69, 
+    71, 73, 75, 77, 79, 81, 83, 85, 87, 89 ;
+
+ mask =
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+[...]
+#+end_example
+
+
+** Visualization of GLMELT_144X90_gas.OCN.nc
+
+#+BEGIN_SRC jupyter-python :results verbatim :exports results
+import xarray as xr
+ds = xr.open_dataset('./dat/GLMELT_144X90_gas.OCN.nc')
+_ = ds['mask'].plot()
+#+END_SRC
+
+#+ATTR_LATEX: :height 0.9\textheight
+#+RESULTS:
+[[file:~/tmp/ob-jupyter-figs/4ae2299e0176cc83b7260b90276f2c9a1f22f10f.png]]
+
+
+** Actual distribution of melt (Greenland)
+*** Code                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.6
+:END:
+
+#+NAME: mb_distribution
+#+BEGIN_SRC jupyter-python :exports both
+import xarray as xr
+ds = xr.open_dataset('./input/mankoff_2021.nc')
+df = ds['MB_ROI']\
+    .rename('Mass loss [%]')\
+    .mean(dim='time')\
+    .to_dataframe()\
+    .abs()
+
+norm_df = df * (1/df.sum())
+norm_df = (norm_df * 100).round().astype(int)
+norm_df.loc['TOTAL'] = norm_df.sum()
+norm_df
+#+END_SRC
+
+*** Results                                                :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.4
+:END:
+
+#+RESULTS: mb_distribution
+| region | Mass loss [%] |
+|--------+---------------|
+| NE     |            12 |
+| CE     |             1 |
+| SE     |             6 |
+| SW     |             6 |
+| CW     |            24 |
+| NW     |            32 |
+| NO     |            19 |
+| TOTAL  |           100 |
+
+** Mask editing                                         :noexport:
+*** Make mask QGIS compatible
+
++ Cannot do, currently, with 4x5.
+  + https://lists.osgeo.org/pipermail/gdal-dev/2023-January/056767.html
+  + https://github.com/OSGeo/gdal/pull/7113
+
+
+#+BEGIN_SRC jupyter-python
+import xarray as xr
+
+fname = "GLMELT_144X90_gas.OCN.nc"
+ds = xr.open_dataset("./dat/" + fname)
+
+ds["crs"] = True
+ds["crs"].attrs["grid_mapping_name"] = "latitude_longitude"
+
+ds["mask"].attrs["grid_mapping"] = "crs"
+ds["mask"].attrs["_FillValue"] = 0 # optional
+
+ds.to_netcdf("./dat/" + fname[:-3] + ".crs.nc")
+#+END_SRC
+
+
+#+BEGIN_SRC bash
+ncap2 -h -O -s 'crs=1B' ./dat/GLMELT_144X90_gas.OCN.nc ./dat/GLMELT_144X90_gas.OCN.v2.nc
+
+ncatted -h -O \
+    -a grid_mapping_name,crs,c,c,'latitude_longitude' \
+    -a grid_mapping,mask,c,c,'crs' \
+    -a _FillValue,mask,c,c,0 \
+     ./dat/GLMELT_144X90_gas.OCN.v2.nc
+#+END_SRC
+
+#+RESULTS:
+
+
+#+BEGIN_SRC bash :results verbatim
+ncdump -chs ./dat/GLMELT_144X90_gas.OCN.crs.nc
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+netcdf GLMELT_144X90_gas.OCN.crs {
+dimensions:
+	lon = 144 ;
+	lat = 90 ;
+variables:
+	float lon(lon) ;
+		lon:_FillValue = NaNf ;
+		lon:units = "degrees_east" ;
+		lon:_Storage = "contiguous" ;
+		lon:_Endianness = "little" ;
+	float lat(lat) ;
+		lat:_FillValue = NaNf ;
+		lat:units = "degrees_north" ;
+		lat:_Storage = "contiguous" ;
+		lat:_Endianness = "little" ;
+	float mask(lat, lon) ;
+		mask:_FillValue = 0.f ;
+		mask:grid_mapping = "crs" ;
+		mask:_Storage = "contiguous" ;
+		mask:_Endianness = "little" ;
+	byte crs ;
+		crs:grid_mapping_name = "latitude_longitude" ;
+		crs:dtype = "bool" ;
+		crs:_Storage = "contiguous" ;
+
+// global attributes:
+		:_NCProperties = "version=2,netcdf=4.8.1,hdf5=1.12.1" ;
+		:_SuperblockVersion = 2 ;
+		:_IsNetcdf4 = 1 ;
+		:_Format = "netCDF-4" ;
+}
+#+end_example
+
+*** Print locations (NH; 4x5)
+#+BEGIN_SRC jupyter-python
+import xarray as xr
+ds = xr.open_dataset('./dat/GLMELT_4X5.OCN.nc')
+
+ds = ds.where((ds['mask'] == 1) & (ds['lat'] > 0))
+da_stacked = ds['mask'].stack(notnull=['lat','lon'])
+dd = da_stacked[da_stacked.notnull()]
+# print(dd)
+df = pd.DataFrame([_ for _ in zip(dd['lat'].values,dd['lon'].values,dd.values)],
+                  columns=['lat','lon','mask'])
+
+# df.set_index(['lat','lon'])
+df
+#+END_SRC
+
+#+RESULTS:
+|   | lat |   lon | mask |
+|---+-----+-------+------|
+| 0 |  62 | -52.5 |    1 |
+| 1 |  62 | -37.5 |    1 |
+| 2 |  66 | -57.5 |    1 |
+| 3 |  66 | -37.5 |    1 |
+| 4 |  66 | -32.5 |    1 |
+| 5 |  66 | -27.5 |    1 |
+| 6 |  70 | -57.5 |    1 |
+| 7 |  70 | -22.5 |    1 |
+| 8 |  74 | -57.5 |    1 |
+| 9 |  74 | -17.5 |    1 |
+
+
+*** Print locations (NH; 2.5x2)
+#+BEGIN_SRC jupyter-python
+import xarray as xr
+melt = xr.open_dataset('./dat/GLMELT_4X5.OCN.nc')
+cl = xr.open_dataset('./dat/Z2HX2fromZ1QX1N.BS1.nc')
+ds = melt.merge(cl)
+
+ds = ds.where((ds['mask'] == 1) & (ds['lat'] > 0))
+
+st = ds.stack(notnull=['lat','lon'])
+da_stacked = ds['mask'].stack(notnull=['lat','lon'])
+dd = da_stacked[da_stacked.notnull()]
+# print(dd)
+df = pd.DataFrame([_ for _ in zip(dd['lat'].values,dd['lon'].values,dd.values)],
+                  columns=['lat','lon','mask'])
+
+# df.set_index(['lat','lon'])
+df
+#+END_SRC
+
+#+RESULTS:
+|   | lat |   lon | mask |
+|---+-----+-------+------|
+| 0 |  62 | -52.5 |    1 |
+| 1 |  62 | -37.5 |    1 |
+| 2 |  66 | -57.5 |    1 |
+| 3 |  66 | -37.5 |    1 |
+| 4 |  66 | -32.5 |    1 |
+| 5 |  66 | -27.5 |    1 |
+| 6 |  70 | -57.5 |    1 |
+| 7 |  70 | -22.5 |    1 |
+| 8 |  74 | -57.5 |    1 |
+| 9 |  74 | -17.5 |    1 |
+
+
+*** SST boundary
+
++ Compare GLMELT and OST SST fields spatially...
+
+#+BEGIN_SRC jupyter-python :results verbatim :exports results
+import xarray as xr
+import matplotlib.pyplot as plt
+
+glmelt = xr.open_dataset('./dat/GLMELT_144X90_gas.OCN.nc')
+glmelt = glmelt.where(glmelt['mask'] != 0)
+
+land = xr.open_dataset('./dat/Z2HX2fromZ1QX1N.BS1.nc')
+
+plt.clf()
+_ = land['focean'].plot()
+_ = glmelt['mask'].plot(cmap=plt.cm.Blues)
+#+END_SRC
+
+#+RESULTS:
+
+*** Label locations (4x5)
+#+BEGIN_SRC jupyter-python
+import xarray as xr
+ds = xr.open_dataset('./dat/GLMELT_4X5.OCN.nc')
+
+ds['region'] = (('lat','lon'), (ds.mask.values).astype(str))
+
+ds['region'][27,38] = 'SW'
+ds['region'][26,39] = 'SW'
+ds['region'][25,40] = 'SW'
+
+ds['region'][27,38] = 'SE'
+ds['region'][27,38] = 'SE'
+ds['region'][27,38] = 'SE'
+
+
+ds = ds.where(ds['mask'] == 1)
+da_stacked = ds['mask'].stack(notnull=['lat','lon'])
+dd = da_stacked[da_stacked.notnull()]
+# print(dd)
+df = pd.DataFrame([_ for _ in zip(dd['lat'].values,dd['lon'].values,dd.values)],
+                  columns=['lat','lon','mask'])
+
+# df.set_index(['lat','lon'])
+df
+#+END_SRC
+
+#+RESULTS:
+|     | lat |    lon | mask |
+|-----+-----+--------+------|
+|   0 | -78 | -177.5 |    1 |
+|   1 | -78 | -172.5 |    1 |
+|   2 | -78 | -167.5 |    1 |
+|   3 | -78 | -162.5 |    1 |
+|   4 | -78 |  -42.5 |    1 |
+|   5 | -78 |  -37.5 |    1 |
+|   6 | -78 |  177.5 |    1 |
+|   7 | -74 | -177.5 |    1 |
+|   8 | -74 | -172.5 |    1 |
+|   9 | -74 | -167.5 |    1 |
+|  10 | -74 | -162.5 |    1 |
+|  11 | -74 | -157.5 |    1 |
+|  12 | -74 | -152.5 |    1 |
+|  13 | -74 | -147.5 |    1 |
+|  14 | -74 | -142.5 |    1 |
+|  15 | -74 | -137.5 |    1 |
+|  16 | -74 | -132.5 |    1 |
+|  17 | -74 | -127.5 |    1 |
+|  18 | -74 |  -57.5 |    1 |
+|  19 | -74 |  -52.5 |    1 |
+|  20 | -74 |  -47.5 |    1 |
+|  21 | -74 |  -42.5 |    1 |
+|  22 | -74 |  -37.5 |    1 |
+|  23 | -74 |  -32.5 |    1 |
+|  24 | -74 |  -27.5 |    1 |
+|  25 | -74 |  -22.5 |    1 |
+|  26 | -74 |  167.5 |    1 |
+|  27 | -74 |  172.5 |    1 |
+|  28 | -74 |  177.5 |    1 |
+|  29 | -70 | -177.5 |    1 |
+|  30 | -70 | -172.5 |    1 |
+|  31 | -70 | -167.5 |    1 |
+|  32 | -70 | -162.5 |    1 |
+|  33 | -70 | -157.5 |    1 |
+|  34 | -70 | -152.5 |    1 |
+|  35 | -70 | -147.5 |    1 |
+|  36 | -70 | -142.5 |    1 |
+|  37 | -70 | -137.5 |    1 |
+|  38 | -70 | -132.5 |    1 |
+|  39 | -70 | -127.5 |    1 |
+|  40 | -70 |  -57.5 |    1 |
+|  41 | -70 |  -52.5 |    1 |
+|  42 | -70 |  -47.5 |    1 |
+|  43 | -70 |  -42.5 |    1 |
+|  44 | -70 |  -37.5 |    1 |
+|  45 | -70 |  -32.5 |    1 |
+|  46 | -70 |  -27.5 |    1 |
+|  47 | -70 |  -22.5 |    1 |
+|  48 | -70 |  -17.5 |    1 |
+|  49 | -70 |  -12.5 |    1 |
+|  50 | -70 |   -7.5 |    1 |
+|  51 | -70 |   -2.5 |    1 |
+|  52 | -70 |  162.5 |    1 |
+|  53 | -70 |  167.5 |    1 |
+|  54 | -70 |  172.5 |    1 |
+|  55 | -70 |  177.5 |    1 |
+|  56 | -66 | -177.5 |    1 |
+|  57 | -66 | -172.5 |    1 |
+|  58 | -66 | -167.5 |    1 |
+|  59 | -66 | -162.5 |    1 |
+|  60 | -66 | -157.5 |    1 |
+|  61 | -66 | -152.5 |    1 |
+|  62 | -66 | -147.5 |    1 |
+|  63 | -66 | -142.5 |    1 |
+|  64 | -66 | -137.5 |    1 |
+|  65 | -66 | -132.5 |    1 |
+|  66 | -66 | -127.5 |    1 |
+|  67 | -66 |  -57.5 |    1 |
+|  68 | -66 |  -52.5 |    1 |
+|  69 | -66 |  -47.5 |    1 |
+|  70 | -66 |  -42.5 |    1 |
+|  71 | -66 |  -37.5 |    1 |
+|  72 | -66 |  -32.5 |    1 |
+|  73 | -66 |  -27.5 |    1 |
+|  74 | -66 |  -22.5 |    1 |
+|  75 | -66 |  -17.5 |    1 |
+|  76 | -66 |  -12.5 |    1 |
+|  77 | -66 |   -7.5 |    1 |
+|  78 | -66 |   -2.5 |    1 |
+|  79 | -66 |  162.5 |    1 |
+|  80 | -66 |  167.5 |    1 |
+|  81 | -66 |  172.5 |    1 |
+|  82 | -66 |  177.5 |    1 |
+|  83 | -62 | -177.5 |    1 |
+|  84 | -62 | -172.5 |    1 |
+|  85 | -62 | -167.5 |    1 |
+|  86 | -62 | -162.5 |    1 |
+|  87 | -62 | -157.5 |    1 |
+|  88 | -62 | -152.5 |    1 |
+|  89 | -62 | -147.5 |    1 |
+|  90 | -62 | -142.5 |    1 |
+|  91 | -62 | -137.5 |    1 |
+|  92 | -62 | -132.5 |    1 |
+|  93 | -62 | -127.5 |    1 |
+|  94 | -62 |  -62.5 |    1 |
+|  95 | -62 |  -57.5 |    1 |
+|  96 | -62 |  -52.5 |    1 |
+|  97 | -62 |  -47.5 |    1 |
+|  98 | -62 |  -42.5 |    1 |
+|  99 | -62 |  -37.5 |    1 |
+| 100 | -62 |  -32.5 |    1 |
+| 101 | -62 |  -27.5 |    1 |
+| 102 | -62 |  -22.5 |    1 |
+| 103 | -62 |  -17.5 |    1 |
+| 104 | -62 |  -12.5 |    1 |
+| 105 | -62 |   -7.5 |    1 |
+| 106 | -62 |   -2.5 |    1 |
+| 107 | -62 |  162.5 |    1 |
+| 108 | -62 |  167.5 |    1 |
+| 109 | -62 |  172.5 |    1 |
+| 110 | -62 |  177.5 |    1 |
+| 111 |  62 |  -52.5 |    1 |
+| 112 |  62 |  -37.5 |    1 |
+| 113 |  66 |  -57.5 |    1 |
+| 114 |  66 |  -37.5 |    1 |
+| 115 |  66 |  -32.5 |    1 |
+| 116 |  66 |  -27.5 |    1 |
+| 117 |  70 |  -57.5 |    1 |
+| 118 |  70 |  -22.5 |    1 |
+| 119 |  74 |  -57.5 |    1 |
+| 120 |  74 |  -17.5 |    1 |
+
+
 * Antarctica
 
-** IMBIE
+** IMBIE 2018
 
 + IMBIE citep:the-imbie-team_2018 has a longer records: 1992 through 2018 (and ongoing updates)
 + http://imbie.org/data-downloads/
 
-** IMBIE vs Slater /et al./ 2021
+** IMBIE 2018 vs Slater 2021
 
 *** Text                                                   :BMCOL:
 :PROPERTIES:
@@ -289,7 +795,7 @@ Freq: AS-JAN, Name: MB, dtype: float64
 :END:
 
 Bottom panel
-+ Blue line is same as upper panel
++ Blue line is same as middle panel
 + Green line is:
   + Blue line (Grounded ice) +
   + Southern hemisphere sea ice +
@@ -310,6 +816,7 @@ md5sum ./input/imbie_dataset-2018_07_23.xlsx
 : 0428261d001f8e3b8a18d43e6f29b629  ./input/imbie_dataset-2018_07_23.xlsx
   
 #+BEGIN_SRC jupyter-python :exports results
+import numpy as np
 import pandas as pd
 from datetime import datetime
 from datetime import timedelta
@@ -377,22 +884,44 @@ df[['Antarctica']]\
     .rename(columns={'Antarctica':'AQ only (grounded)'})\
     .plot(ax=ax3, **kw)
 df[['Antarctica',
-    'Antarctic Sea Ice',
     'Ice Shelf Calving',
     'Ice Shelf Thinning'
     ]]\
     .sum(axis='columns')\
     [:'2015-12-31']\
     .plot(ax=ax3, color='green', **kw)
-ax3.legend(['Grounded only (middle panel)','SH SI + IS Calv + IC Thin + AQ'], fontsize=8)
+ax3.legend(['Grounded only (middle panel)','IS Calv + IC Thin + AQ'], fontsize=8)
 _ = ax3.set_ylabel('Cumulative\nfreshwater mass [Gt]')
 #+END_SRC
 
 #+ATTR_LATEX: :height 0.9\textheight
 #+RESULTS:
-[[file:./.ob-jupyter/df266fe8559ade84af49bf16a4bf65c8690edc4e.png]]
+[[file:./.ob-jupyter/fc07e4a0fe422414ee969936ad5676f7f6dec11b.png]]
 
 
+
+* Summary
+** Question
+
++ [ ] How to extend time series?
++ [ ] Where is high-res (1x1) =GLMELT= mask located?
++ [ ] Should we include Arctic Sea Ice & Antarctic Sea Ice changes?
+  + [ ] If so, on what mask?
++ [ ] How to define new mask?
+  + [ ] Regional contribution to mass loss
++ [ ] Should we redefine baseline mask?
+  + [ ] Currently is 1 everywhere (uniform spread)
+  + [ ] Should be based on only negative mass terms
+    + Surface melt
+    + Iceberg discharge & submarine melt
+    + [ ] Parameterize iceberg drift and melt to far-field?
+
+** To Do
+
++ [ ] Write freshwater anomaly to ModelE file format
++ [ ] Create new mask
+  + [ ] Redefine baseline mask
++ [ ] Modify ModelE to use new mask + FW forcing
 
 * Appendix                                            :B_appendix:
 :PROPERTIES:
@@ -471,7 +1000,7 @@ embedded. If you are viewing:
 #+BEAMER_HEADER: \setbeamerfont{frametitle}{size=\Large}
 # \tiny \scriptsize \footnotesize \small \normalsize \large \Large \huge \Huge
 
-# (setq org-latex-listings t)
+# (setq org-latex-listings nil)
 
 # #+INCLUDE: "./listings.org"
 # #+LaTeX: \setbeamercolor*{block title verbatim}{bg=yellow!50}
@@ -645,6 +1174,13 @@ embedded. If you are viewing:
 # \begin{backgroundblock}{-3mm}{9mm}
 # \includegraphics[height=\textheight]{./fig/Q.png}
 # \end{backgroundblock}
+
+** Code export
+
+# (add-to-list 'org-latex-packages-alist '("minted"))
+# (setq org-latex-listings 'minted)
+# (setq org-latex-packages-alist nil)
+# (setq org-latex-listings nil)
 
 ** COMMENT Embedded file
 #+LATEX_HEADER_EXTRA: \usepackage{embedfile}
