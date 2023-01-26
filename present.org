@@ -25,33 +25,35 @@
 * COMMENT Table of contents                       :toc_2:noexport:
 - [[#introduction][Introduction]]
   - [[#summary][Summary]]
+  - [[#numbers-and-units][Numbers and units]]
+  - [[#overview-numbers][Overview numbers]]
   - [[#global-ice-mass-change][Global ice mass change]]
   - [[#slater-2021-fig-4-recreation][Slater 2021 Fig. 4 recreation]]
   - [[#issues][Issues]]
-- [[#greenlandic-grounded-ice][Greenlandic grounded ice]]
+- [[#greenland][Greenland]]
   - [[#mankoff-2021][Mankoff 2021]]
   - [[#fetch-historical-observations][Fetch historical observations]]
   - [[#compare-mankoff-2021--slater-2021][Compare Mankoff 2021 & Slater 2021]]
-  - [[#process-to-modele-format][Process to ModelE format]]
-- [[#greenlandic-peripheral-glaciers][Greenlandic peripheral glaciers]]
-  - [[#greenlandic-peripheral-glaciers-1][Greenlandic Peripheral glaciers]]
-- [[#arctic-sea-ice][Arctic sea ice]]
-  - [[#arctic-sea-ice-1][Arctic sea ice]]
-- [[#freshwater-distribution-mask][Freshwater distribution mask]]
-  - [[#introduction-1][Introduction]]
-  - [[#modele-mask][ModelE Mask]]
-  - [[#contents-of-glmelt_4x5ocnnc][Contents of GLMELT_4X5.OCN.nc]]
-  - [[#visualization-of-glmelt_4x5ocnnc][Visualization of GLMELT_4X5.OCN.nc]]
-  - [[#contents-of-glmelt_144x90_gasocnnc][Contents of GLMELT_144X90_gas.OCN.nc]]
-  - [[#visualization-of-glmelt_144x90_gasocnnc][Visualization of GLMELT_144X90_gas.OCN.nc]]
-  - [[#actual-distribution-of-melt-greenland][Actual distribution of melt (Greenland)]]
-  - [[#mask-editing][Mask editing]]
+  - [[#greenlandic-peripheral-glaciers][Greenlandic Peripheral glaciers]]
+  - [[#greenlandic-icebergs-vs-runoff--submarine-melt][Greenlandic icebergs vs. (runoff & submarine melt)]]
 - [[#antarctica][Antarctica]]
   - [[#imbie-2018][IMBIE 2018]]
   - [[#imbie-2018-vs-slater-2021][IMBIE 2018 vs Slater 2021]]
+  - [[#antarctic-icebergs][Antarctic icebergs]]
+- [[#freshwater-anomalies][Freshwater Anomalies]]
+  - [[#greenland-mass-loss-by-roi][Greenland mass loss by ROI]]
+  - [[#greenland-iceberg-by-roi][Greenland iceberg by ROI]]
+  - [[#greenland-stream-discharge-by-roi][Greenland stream discharge by ROI]]
+  - [[#greenland-freshwater-by-roi][Greenland freshwater by ROI]]
+- [[#freshwater-distribution-mask][Freshwater distribution mask]]
+  - [[#introduction-1][Introduction]]
+  - [[#modele-mask][ModelE Mask]]
+  - [[#contents-of-glmelt_144x90_gasocnnc][Contents of GLMELT_144X90_gas.OCN.nc]]
+  - [[#visualization-of-glmelt_144x90_gasocnnc][Visualization of GLMELT_144X90_gas.OCN.nc]]
+  - [[#mask-editing][Mask editing]]
+  - [[#new-mask-creation][New mask creation]]
 - [[#summary-1][Summary]]
-  - [[#question][Question]]
-  - [[#to-do][To Do]]
+  - [[#questions--to-do][Questions & To Do]]
 - [[#appendix][Appendix]]
   - [[#references][References]]
   - [[#about-this-document][About This Document]]
@@ -69,16 +71,47 @@
 
 This workbook computes freshwater anomaly from Greenland and Antarctica for the NASA GISS ModelE.
 
-+ Anomaly is defined as mass loss since [TBD]
-+ Temporal resolution is annual
++ Anomaly is defined as mass loss since 1990
 + Spatially, ModelE distributes a single value according to a 'distribution field' - a floating point mask that sums to 1.
+
+** Numbers and units
+
++ 1 Gt = 1 km^{3}
++ 360 Gt \(\sim\)= 1 mm SLR
+
+** Overview numbers
+:PROPERTIES:
+:BEAMER_opt: shrink=9
+:END:
+
++ Greenland *net* ice mass loss: \(\sim\)180 Gt yr^{-1} since 1990 citep:mankoff_2021
+
+{{{SKIPLINE}}}
+
++ \(\sim\)500 Gt yr^{-1} is dynamic (outlet glacier discharge; citet:mankoff_2020_solid)
+  + Distributed \(\sim\)50 % \pm40 % between submarine melt & icebergs citep:enderlin_2013
+  + Fairly steady intra- and inter- annual
++ \(\sim\)300--500 Gt yr^{-1} is surface melt and runoff citep:mankoff_2017_VHD,mankoff_2020_liquid
+  + Some surface rivers, most submarine
+  + Highly seasonal (most in summer)
+  + Highly variable interannual
++ From the above, ice sheet mass gain (snowfall) should be \(\sim\)600--800 Gt yr^{-1} 
+
+{{{SKIPLINE}}}
+
++ Another \(\sim\)120 Gt yr^{-1} land runoff (rain/snow on non-ice-sheet land) citep:mankoff_2020_liquid
 
 ** Global ice mass change
 
-citet:slater_2021 track global ice mass change from 1994 through 2017 including floating and grounded.
+citet:slater_2021 provides global ice mass change. This includes *ice shelf mass loss*, something not detected by GRACE and excluded from most mass change products. We use citet:slater_2021 in Antarctica.
 
 + Paper: https://doi.org/10.5194/tc-15-233-2021
 + Data: Shared via email (pers. comm.)
+  + To be updated with DOI
+
+{{{SKIPLINE}}}
+
+In Greenland, we use citet:mankoff_2021 because it begins earlier, is continually updating, and ice shelf melting and thinning is negligible in Greenland relative to the other freshwater terms.
 
 ** Slater 2021 Fig. 4 recreation
 *** Original                                               :BMCOL:
@@ -97,7 +130,7 @@ citet:slater_2021 track global ice mass change from 1994 through 2017 including 
 :END:
 **** Recreation
 
-#+BEGIN_SRC jupyter-python :results file :exports results
+#+BEGIN_SRC jupyter-python :results file :exports results :file ./fig/slater_2021_fig4.png
 import pandas as pd
 
 kw = {'parse_dates':True, 'index_col':0}
@@ -137,16 +170,18 @@ plt.savefig('./fig/slater_2021_fig4.png', dpi=150)
 #+END_SRC
 
 #+RESULTS:
-[[file:./.ob-jupyter/8924bac88c2c80f0af2e9f1a129c0909edec3f80.png]]
+[[file:./fig/slater_2021_fig4.png]]
 
 
 
 ** Issues
 
 + Although citet:slater_2021 provide global ice mass change, the data is only from 1994 through 2017
-+ We will use other products with longer records, but use citet:slater_2021 for QC
++ We will use other products with longer records where possible, but use citet:slater_2021 for QC
++ We will extrapolate citet:slater_2021 forward and backward if no other product exists
+  + i.e., Antarctic ice shelves
 
-* Greenlandic grounded ice
+* Greenland
 ** Mankoff 2021
 
 citet:mankoff_2021 provide *main ice sheet* mass loss from 1840 through next week.
@@ -172,7 +207,8 @@ wget -nc https://dataverse.geus.dk/api/access/datafile/:persistentId?persistentI
 :PROPERTIES:
 :BEAMER_col: 0.5
 :END:
-#+BEGIN_SRC jupyter-python :exports results
+
+#+BEGIN_SRC jupyter-python :results file :exports results :file ./fig/mankoff_v_slater.png
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -205,7 +241,7 @@ _ = axr.set_ylabel('SLR [mm]')
 #+END_SRC
 
 #+RESULTS:
-[[file:./.ob-jupyter/45a68d209381e2ce505acad99c97c85354e3c57c.png]]
+[[file:./fig/mankoff_v_slater.png]]
 
 
 *** Text                                                   :BMCOL:
@@ -216,72 +252,283 @@ _ = axr.set_ylabel('SLR [mm]')
 + Upper panel: annual change (and difference between two products [dashed gray])
 + Lower panel: cumulative
 
-** Process to ModelE format                             :noexport:
-
-#+BEGIN_SRC jupyter-python
-import pandas as pd
-df = pd.read_csv('./input/mankoff_2021.csv',
-                 parse_dates = True,
-                 index_col = 0)
-
-df = df.loc['1990-01-01':'2020-12-31']
-df = df.resample('YS').sum()
-df = df['MB']
-df
-#+END_SRC
-
-#+RESULTS:
-#+begin_example
-time
-1990-01-01   -138.730546
-1991-01-01    -78.035251
-1992-01-01     86.510696
-1993-01-01    -91.168942
-1994-01-01   -113.813365
-1995-01-01   -212.258811
-1996-01-01    131.861276
-1997-01-01      7.228484
-1998-01-01   -242.034055
-1999-01-01    -47.090412
-2000-01-01    -77.221410
-2001-01-01    -26.031650
-2002-01-01   -142.376845
-2003-01-01   -167.267936
-2004-01-01   -166.197877
-2005-01-01   -168.408093
-2006-01-01   -239.836278
-2007-01-01   -257.300333
-2008-01-01   -199.784137
-2009-01-01   -241.123712
-2010-01-01   -374.126750
-2011-01-01   -330.186274
-2012-01-01   -425.403462
-2013-01-01   -100.150906
-2014-01-01   -182.195958
-2015-01-01   -213.177325
-2016-01-01   -255.469501
-2017-01-01   -101.391264
-2018-01-01    -72.974441
-2019-01-01   -411.930477
-2020-01-01   -173.929899
-Freq: AS-JAN, Name: MB, dtype: float64
-#+end_example
-
-
-* Greenlandic peripheral glaciers
 ** Greenlandic Peripheral glaciers
 
 + Need to determine where Greenlandic peripheral glaciers are in the citet:slater_2021 data
   + [ ] Greenland?
   + [ ] Glaciers?
-+ If needed, can include as a scaling factor from citet:mankoff_2021 main ice sheet mass balance
++ Presumably they're included in the Greenland ice mass, because citet:slater_2021 uses GRACE, which cannot distinguish main ice from peripheral
++ citet:mankoff_2021 do not include peripheral glaciers, but can via a scaling factor
++ Note on previous slide - differences due to peripheral glacier treatment not detectable
 
-* Arctic sea ice
-** Arctic sea ice
+** Greenlandic icebergs vs. (runoff & submarine melt)
 
-+ Provided by citet:slater_2021
-+ Does it need to be included in the anomaly product
-  + Does it need its own distribution mask?
++ Surface melt and submarine melt should be introduced at the coast
++ Icebergs may melt farther away
+  + However, icebergs in Greenland generally do not travel far
+  + https://sentinel.esa.int/web/success-stories/-/greenland-iceberg-chart
+  + http://polarportal.dk/en/sea-ice-and-icebergs/icebergs/
+  + TODO: check https://nsidc.org/data/g00807/versions/1
+
+* Antarctica
+** IMBIE 2018
+
++ IMBIE citep:imbie_2018 has a longer records: 1992 through 2018 (and ongoing updates)
++ http://imbie.org/data-downloads/
+
+** IMBIE 2018 vs Slater 2021
+
+*** Text                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
+
+Bottom panel: Blue line is repeated from middle panel (Slater 2021)
+
+*** Figure                                                 :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
+
+#+BEGIN_SRC bash
+md5sum ~/data/IMBIE/* 
+#+END_SRC
+
+#+RESULTS:
+| 0428261d001f8e3b8a18d43e6f29b629 | /home/kdm/data/IMBIE/imbie_dataset-2018_07_23.xlsx                    |
+| 34d73176452df4039d42c668438fbcb5 | /home/kdm/data/IMBIE/imbie_dataset_greenland_dynamics-2020_02_28.xlsx |
+  
+#+BEGIN_SRC jupyter-python :exports results :results file :file ./fig/slater_v_imbie.png
+import numpy as np
+import pandas as pd
+from datetime import datetime
+from datetime import timedelta
+import matplotlib.pyplot as plt
+
+def convert_partial_year(number):
+    year = int(number)
+    d = timedelta(days=(number - year)*365)
+    day_one = datetime(year,1,1)
+    date = d + day_one
+    return date.date()
+
+
+imbie = pd.read_excel('~/data/IMBIE/imbie_dataset-2018_07_23.xlsx')\
+    .rename(columns={'Cumulative ice mass change (Gt)':'IMBIE',
+                     'Cumulative ice mass change uncertainty (Gt)':'IMBIE err'})\
+    .drop(columns=['Cumulative sea level contribution (mm)',
+                   'Cumulative sea level contribution uncertainty (mm)'])
+
+imbie.index = pd.to_datetime([convert_partial_year(_) for _ in imbie['Year']])
+imbie = imbie.drop(columns='Year')
+
+# imbie = imbie.resample('1D').interpolate(dim='time').resample('YS').mean()
+imbie = imbie.resample('YS').mean()
+
+
+
+kw = {'parse_dates':True, 'index_col':0}
+shelf_calving = pd.read_csv('./input/iceshelves_calving_cumul_1994_2017_annual.csv', names=['Ice Shelf Calving'], **kw)
+shelf_thinning = pd.read_csv('./input/iceshelves_thinning_cumul_1994_2017_annual.csv', names=['Ice Shelf Thinning'], **kw)
+AQ = pd.read_csv('./input/AIS_cumul_1994_2017_annual.csv', names=['Antarctica'], **kw)
+kw = {'left_index':True, 'right_index':True, 'how':'outer'}
+S2021 = shelf_calving.merge(shelf_thinning, **kw).merge(AQ, **kw)
+S2021.index.name = 'Date'
+
+
+df = imbie.merge(S2021, left_index=True, right_index=True, how='outer')
+df.index.name = 'Date'
+
+for _ in df.columns: # extend by 1 year for plotting w/ 'step'
+    df.loc[df[_].dropna().index[-1] + pd.offsets.DateOffset(years=1),_] = df[_].dropna().iloc[-1]
+
+fig, (ax, ax2, ax3) = plt.subplots(nrows=3, figsize=(4,7), sharex=True)
+kw = {'drawstyle':'steps'}
+(df['Antarctica']).diff().plot(ax=ax, **kw)
+(df['IMBIE']).diff().plot(ax=ax, **kw)
+ax.set_ylabel('Annual\nmass change [Gt]')
+(df['IMBIE'] - df['Antarctica']).diff().plot(ax=ax, linestyle='--', color='k', alpha=0.5, **kw)
+
+df[['Antarctica','IMBIE']]\
+    .rename(columns={'Antarctica':'Slater 2021 (AQ)'})\
+    .plot(ax=ax2, **kw)
+_ = ax2.set_ylabel('Cumulative\nmass change [Gt]')
+ax2r = ax2.twinx()
+ax2r.set_ylim(np.array(ax2.get_ylim()).astype(float)/-362)
+ax2r.set_ylabel('SLR [mm]')
+
+xlim = ax2.get_xlim()
+
+df['Total'] = df[['Antarctica','Ice Shelf Calving','Ice Shelf Thinning']].sum(axis='columns')
+df['Ice Shelf (Combined)'] = df[['Ice Shelf Calving','Ice Shelf Thinning']].sum(axis='columns')
+plt.rcParams.update({'legend.fontsize':8})
+df[['Antarctica',
+    'Ice Shelf Calving',
+    'Ice Shelf Thinning',
+    'Ice Shelf (Combined)',
+    'Total',
+    ]]\
+    .dropna()\
+    .plot(ax=ax3, **kw)
+_ = ax3.set_ylabel('Cumulative\nfreshwater mass [Gt]')
+_ = ax3.set_xlim(xlim)
+#+END_SRC
+
+#+ATTR_LATEX: :height 0.85\textheight
+#+RESULTS:
+[[file:./fig/slater_v_imbie.png]]
+
+** TODO Antarctic icebergs
+
++ https://www.scp.byu.edu/data/iceberg/
++ https://www.scar.org/resources/iceberg-database/
++ DOI: https://doi.org/10.1017/jog.2022.84
++ https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=8247260
+
+* Freshwater Anomalies
+** Greenland mass loss by ROI
+*** Code                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.6
+:END:
+
+#+NAME: mb_distribution
+#+BEGIN_SRC jupyter-python :exports both
+import xarray as xr
+fname = '/home/kdm/data/Mankoff_2021/203/MB_region.nc'
+ds = xr.open_dataset(fname)
+df = ds['MB_ROI']\
+    .rename('Mass loss [%]')\
+    .mean(dim='time')\
+    .to_dataframe()\
+    .abs()
+
+norm_df = df * (1/df.sum())
+norm_df = (norm_df * 100).round().astype(int)
+norm_df.loc['TOTAL'] = norm_df.sum()
+norm_df.sort_index()
+#+END_SRC
+
+*** Results                                                :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.4
+:ID:       20230126T103911
+:END:
+
+#+RESULTS: mb_distribution
+| region | Mass loss [%] |
+|--------+---------------|
+| CE     |             3 |
+| CW     |            24 |
+| NE     |            12 |
+| NO     |            19 |
+| NW     |            32 |
+| SE     |             5 |
+| SW     |             6 |
+| TOTAL  |           101 |
+
+** Greenland iceberg by ROI
+*** Code                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.6
+:END:
+
+#+NAME: iceberg_distribution
+#+BEGIN_SRC jupyter-python :exports both
+import pandas as pd
+fname = '/home/kdm/data/Mankoff_2020/ice/region_D.csv'
+df = pd.read_csv(fname, index_col=0, parse_dates=True)
+df = pd.DataFrame(df['1990':'2020'].mean())
+df.index.name = 'region'
+df.columns = ['Mass loss [%]']
+
+norm_df = df * (1/df.sum())
+norm_df = (norm_df * 100).round().astype(int)
+norm_df.loc['TOTAL'] = norm_df.sum()
+norm_df.sort_index()
+#+END_SRC
+
+*** Results                                                :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.4
+:ID:       20230126T103911
+:END:
+
+#+RESULTS: iceberg_distribution
+| region | Mass loss [%] |
+|--------+---------------|
+| CE     |            16 |
+| CW     |            17 |
+| NE     |             6 |
+| NO     |             5 |
+| NW     |            22 |
+| SE     |            31 |
+| SW     |             4 |
+| TOTAL  |           101 |
+
+
+** Greenland stream discharge by ROI
+*** Code                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.6
+:END:
+
+#+NAME: stream_distribution
+#+BEGIN_SRC jupyter-python :exports both :async yes
+import xarray as xr
+ds = xr.open_dataset('/home/kdm/data/Mankoff_2020/water/ice/MAR.nc')
+ds2 = ds.sel({'time':slice('1990-01-01','2019-12-31')}).sum(dim='time')
+df = ds2.groupby('M2019_region').mean()['discharge'].to_dataframe()
+
+norm_df = df * (1/df.sum())
+norm_df = (norm_df * 100).round().astype(int)
+norm_df.loc['TOTAL'] = norm_df.sum()
+norm_df.sort_index()
+#+END_SRC
+
+*** Results                                                :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.4
+:ID:       20230126T103911
+:END:
+
+
+#+RESULTS: stream_distribution
+| M2019_region   |   discharge |
+|----------------+-------------|
+| CE             |          10 |
+| CW             |          17 |
+| NE             |           5 |
+| NO             |           6 |
+| NW             |          17 |
+| SE             |          20 |
+| SW             |          25 |
+| TOTAL          |         100 |
+
+** Greenland freshwater by ROI
+*** Total                                                  :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.33
+:END:
+**** Total
+
+c
+
+*** Iceberg                                                :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.33
+:END:
+**** Iceberg
+
+b
+
+*** Runoff                                                 :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.33
+:END:
+**** Runoff
+
+a
 
 * Freshwater distribution mask
 ** Introduction
@@ -296,66 +543,16 @@ Freq: AS-JAN, Name: MB, dtype: float64
 
 ** ModelE Mask
 
-+ Probably =GLMELT_4X5.OCN.nc= (ROCKE-3D) or =GLMELT_144X90_gas.OCN.nc= (ModelE)
-  + Source: https://portal.nccs.nasa.gov/GISS_modelE/modelE_input_data/
++ Source: https://portal.nccs.nasa.gov/GISS_modelE/modelE_input_data/
++ 4x5 :: =GLMELT_4X5.OCN.nc=
++ 2.5x2 :: =GLMELT_144X90_gas.OCN.nc=
++ 1x1 :: ??
 
-** Contents of GLMELT_4X5.OCN.nc
-:PROPERTIES:
-:BEAMER_opt: shrink=8
-:END:
+{{{SKIPLINE}}}
 
-#+BEGIN_SRC bash :exports results :results verbatim
-ncdump dat/GLMELT_4X5.OCN.nc | head -n30
-echo "[...]"
-#+END_SRC
-
-#+RESULTS:
-#+begin_example
-netcdf GLMELT_4X5.OCN {
-dimensions:
-	lon = 72 ;
-	lat = 46 ;
-variables:
-	float lon(lon) ;
-		lon:units = "degrees_east" ;
-	float lat(lat) ;
-		lat:units = "degrees_north" ;
-	float mask(lat, lon) ;
-data:
-
- lon = -177.5, -172.5, -167.5, -162.5, -157.5, -152.5, -147.5, -142.5, 
-    -137.5, -132.5, -127.5, -122.5, -117.5, -112.5, -107.5, -102.5, -97.5, 
-    -92.5, -87.5, -82.5, -77.5, -72.5, -67.5, -62.5, -57.5, -52.5, -47.5, 
-    -42.5, -37.5, -32.5, -27.5, -22.5, -17.5, -12.5, -7.5, -2.5, 2.5, 7.5, 
-    12.5, 17.5, 22.5, 27.5, 32.5, 37.5, 42.5, 47.5, 52.5, 57.5, 62.5, 67.5, 
-    72.5, 77.5, 82.5, 87.5, 92.5, 97.5, 102.5, 107.5, 112.5, 117.5, 122.5, 
-    127.5, 132.5, 137.5, 142.5, 147.5, 152.5, 157.5, 162.5, 167.5, 172.5, 
-    177.5 ;
-
- lat = -89, -86, -82, -78, -74, -70, -66, -62, -58, -54, -50, -46, -42, -38, 
-    -34, -30, -26, -22, -18, -14, -10, -6, -2, 2, 6, 10, 14, 18, 22, 26, 30, 
-    34, 38, 42, 46, 50, 54, 58, 62, 66, 70, 74, 78, 82, 86, 89 ;
-
- mask =
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-[...]
-#+end_example
-
-
-** Visualization of GLMELT_4X5.OCN.nc
-
-#+BEGIN_SRC jupyter-python :results verbatim :exports results
-import xarray as xr
-ds = xr.open_dataset('./dat/GLMELT_4X5.OCN.nc')
-_ = ds['mask'].plot()
-#+END_SRC
-
-#+ATTR_LATEX: :height 0.9\textheight
-#+RESULTS:
-[[file:./.ob-jupyter/6a36b8a799a828b667fa6c0bd772b99ad930d9ca.png]]
+Land classification mask
++ 2.5x2 :: =Z2HX2fromZ1QX1N.BS1.nc=
++ 1x1 :: =OZ1QX1N.BS1.nc=
 
 ** Contents of GLMELT_144X90_gas.OCN.nc
 :PROPERTIES:
@@ -425,45 +622,6 @@ _ = ds['mask'].plot()
 #+RESULTS:
 [[file:~/tmp/ob-jupyter-figs/4ae2299e0176cc83b7260b90276f2c9a1f22f10f.png]]
 
-
-** Actual distribution of melt (Greenland)
-*** Code                                                   :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.6
-:END:
-
-#+NAME: mb_distribution
-#+BEGIN_SRC jupyter-python :exports both
-import xarray as xr
-ds = xr.open_dataset('./input/mankoff_2021.nc')
-df = ds['MB_ROI']\
-    .rename('Mass loss [%]')\
-    .mean(dim='time')\
-    .to_dataframe()\
-    .abs()
-
-norm_df = df * (1/df.sum())
-norm_df = (norm_df * 100).round().astype(int)
-norm_df.loc['TOTAL'] = norm_df.sum()
-norm_df
-#+END_SRC
-
-*** Results                                                :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.4
-:END:
-
-#+RESULTS: mb_distribution
-| region | Mass loss [%] |
-|--------+---------------|
-| NE     |            12 |
-| CE     |             1 |
-| SE     |             6 |
-| SW     |             6 |
-| CW     |            24 |
-| NW     |            32 |
-| NO     |            19 |
-| TOTAL  |           100 |
 
 ** Mask editing                                         :noexport:
 *** Make mask QGIS compatible
@@ -780,148 +938,227 @@ df
 | 120 |  74 |  -17.5 |    1 |
 
 
-* Antarctica
+** New mask creation
 
-** IMBIE 2018
+*** 10 km buffer around Greenland (raw)
 
-+ IMBIE citep:the-imbie-team_2018 has a longer records: 1992 through 2018 (and ongoing updates)
-+ http://imbie.org/data-downloads/
++ Generate on 1/8 ° (lat,lon) grid grid
++ Can then be resampled as needed
 
-** IMBIE 2018 vs Slater 2021
-
-*** Text                                                   :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.5
-:END:
-
-Bottom panel
-+ Blue line is same as middle panel
-+ Green line is:
-  + Blue line (Grounded ice) +
-  + Southern hemisphere sea ice +
-  + Ice shelf calving +
-  + Ice shelf thinning
-
-*** Figure                                                 :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.5
-:END:
 #+BEGIN_SRC bash
-wget -q http://imbie.org/data-files/imbie_dataset-2018_07_23.xlsx
-mv imbie_dataset-2018_07_23.xlsx ./input
-md5sum ./input/imbie_dataset-2018_07_23.xlsx
+grass -c epsg:4326 ./G
+g.region n=90 s=-90 w=-180 e=180 res=0.125 -pas # 1/8 = 0.125
+
+mkdir -p tmp
+ogr2ogr -f KML tmp/M2019.kml ${DATADIR}/Mouginot_2019/Greenland_Basins_PS_v1.4.2.shp
+
+
+# d.mon wx0
+# d.vect M2019
+
+v.in.ogr input=tmp/M2019.kml output=M2019
+# db.select table=M2019 | head
+
+v.db.addcolumn map=M2019 columns="REGION, INT"
+# Encode using clock face numerics
+db.execute sql='UPDATE M2019 SET REGION=1 where SUBREGION1 = "NE"'
+db.execute sql='UPDATE M2019 SET REGION=12 where SUBREGION1 = "NO"'
+db.execute sql='UPDATE M2019 SET REGION=11 where SUBREGION1 = "NW"'
+db.execute sql='UPDATE M2019 SET REGION=3 where SUBREGION1 = "CE"'
+db.execute sql='UPDATE M2019 SET REGION=9 where SUBREGION1 = "CW"'
+db.execute sql='UPDATE M2019 SET REGION=5 where SUBREGION1 = "SE"'
+db.execute sql='UPDATE M2019 SET REGION=7 where SUBREGION1 = "SW"'
+v.to.rast input=M2019 output=M2019 type=area use=attr attribute_column=REGION
+
+# d.mon wx0
+# d.rast M2019
+
+r.grow.distance -m input=M2019 value=M2019_grow distance=distance metric=geodesic
+
+r.mapcalc "ocean5km = if((distance > 0) & (distance < 50000), M2019_grow, null())"
+r.mapcalc "ocean10km = if((distance > 0) & (distance < 100000), M2019_grow, null())"
+
+# r.out.gdal format=netCDF input=ocean5km output=tmp/ocean5km.nc
+r.out.gdal format=netCDF input=ocean10km output=tmp/ocean10km.nc
 #+END_SRC
 
-#+RESULTS:
-: 0428261d001f8e3b8a18d43e6f29b629  ./input/imbie_dataset-2018_07_23.xlsx
-  
-#+BEGIN_SRC jupyter-python :exports results
+*** Build anomaly map
+
++ See slides above for number
+  + [[id:20230126T103911][Iceberg discharge]]
+  + [[id:20230126T103911][Stream discharge]]
+
+WARNING: This spreads the distribution per sector over the number of grid cells. Because I'm working on my own map of Greenland at high res, some of these grid cells will be land-cells in ModelE. The relative number of land cells per sector should be similar between sectors (large sectors means long coastline meaning many land cells, vs. small sector short coast few cells), meaning this error may not be significant to final results.
+
+#+BEGIN_SRC jupyter-python
 import numpy as np
-import pandas as pd
-from datetime import datetime
-from datetime import timedelta
-import matplotlib.pyplot as plt
+import xarray as xr
 
-def convert_partial_year(number):
-    year = int(number)
-    d = timedelta(days=(number - year)*365)
-    day_one = datetime(year,1,1)
-    date = d + day_one
-    return date.date()
+ds = xr.open_dataset('./tmp/ocean10km.nc')
+ds['lon'].attrs['units'] = 'degrees_east'
+ds['lat'].attrs['units'] = 'degrees_north'
 
+# record the RIO for each cell
+ROI = np.empty(ds['Band1'].data.shape, dtype='U2')
+b1 = ds['Band1'].values.astype(int)
+ROI[b1 == 12] = 'NO' # cloc face
+ROI[b1 == 1] = 'NE'
+ROI[b1 == 3] = 'CE'
+ROI[b1 == 5] = 'SE'
+ROI[b1 == 7] = 'SW'
+ROI[b1 == 9] = 'CW'
+ROI[b1 == 11] = 'NW'
+ROI[b1 == b1[0,0]] = ''
+ds['ROI'] = (('lat','lon'), ROI)
+ds['ROI'].attrs['ROI_source'] = 'Mouginot /et al./ (2019); https://doi.org/10.7280/D1WT11'
 
-imbie = pd.read_excel('./input/imbie_dataset-2018_07_23.xlsx')\
-    .rename(columns={'Cumulative ice mass change (Gt)':'IMBIE',
-                     'Cumulative ice mass change uncertainty (Gt)':'IMBIE err'})\
-    .drop(columns=['Cumulative sea level contribution (mm)',
-                   'Cumulative sea level contribution uncertainty (mm)'])
+ds['ones'] = ds['Band1'].notnull().astype(int)
+ds['ones'].attrs['description'] = 'Grid cells with freshwater runoff, submarine melt, or iceberg forcing'
+ds = ds.drop_vars('Band1')
 
-imbie.index = pd.to_datetime([convert_partial_year(_) for _ in imbie['Year']])
-imbie = imbie.drop(columns='Year')
+# ds['base'] = ds['ones']
+# ds['base'].attrs['description'] = 'Baseline freshwater runoff, submarine melt, or iceberg forcing, scaled by sector contribution'
 
-# imbie = imbie.resample('1D').interpolate(dim='time').resample('YS').mean()
-imbie = imbie.resample('YS').mean()
+# ds['base_solid'] = ds['ones']
+# ds['base_solid'].attrs['description'] = 'Baseline iceberg forcing, scaled by sector contribution'
 
+# ds['base_liquid'] = ds['ones']
+# ds['base_liquid'].attrs['description'] = 'Baseline freshwater runoff and submarine melt scaled by sector contribution'
 
+ds['anom'] = ds['ones']
+ds['anom'].attrs['description'] = 'Anomaly freshwater runoff, submarine melt, or iceberg forcing, scaled by sector contribution'
+ds['anom'] = ds['anom'].where(ds['ROI'] != 'CE', other=(1  / ds['ones'].where(ds['ROI'] == 'CE').sum().data))
+ds['anom'] = ds['anom'].where(ds['ROI'] != 'CW', other=(24 / ds['ones'].where(ds['ROI'] == 'CW').sum().data))
+ds['anom'] = ds['anom'].where(ds['ROI'] != 'NO', other=(19 / ds['ones'].where(ds['ROI'] == 'NO').sum().data))
+ds['anom'] = ds['anom'].where(ds['ROI'] != 'NE', other=(12 / ds['ones'].where(ds['ROI'] == 'NE').sum().data))
+ds['anom'] = ds['anom'].where(ds['ROI'] != 'NW', other=(32 / ds['ones'].where(ds['ROI'] == 'NW').sum().data))
+ds['anom'] = ds['anom'].where(ds['ROI'] != 'SE', other=(6  / ds['ones'].where(ds['ROI'] == 'SE').sum().data))
+ds['anom'] = ds['anom'].where(ds['ROI'] != 'SW', other=(6  / ds['ones'].where(ds['ROI'] == 'SW').sum().data))
 
-kw = {'parse_dates':True, 'index_col':0}
-SH_ice = pd.read_csv('./input/SH_seaice_cumul_1994_2017_annual.csv', names=['Antarctic Sea Ice'], **kw)
-shelf_calving = pd.read_csv('./input/iceshelves_calving_cumul_1994_2017_annual.csv', names=['Ice Shelf Calving'], **kw)
-shelf_thinning = pd.read_csv('./input/iceshelves_thinning_cumul_1994_2017_annual.csv', names=['Ice Shelf Thinning'], **kw)
-AQ = pd.read_csv('./input/AIS_cumul_1994_2017_annual.csv', names=['Antarctica'], **kw)
-kw = {'left_index':True, 'right_index':True, 'how':'outer'}
-S2021 = SH_ice.merge(shelf_calving, **kw)\
-           .merge(shelf_thinning, **kw)\
-           .merge(AQ, **kw)
-S2021.index.name = 'Date'
-# S2021 = S2021.sum(axis='columns')
-# S2021.name = 'Slater 2021'
-# S2021 = pd.read_csv('./input/AIS_cumul_1994_2017_annual.csv', names=['Slater 2021'], **kw)
+ds['anom_solid'] = ds['ones']
+ds['anom_solid'].attrs['description'] = 'Anomaly iceberg forcing, scaled by sector contribution'
+ds['anom_solid'] = ds['anom_solid'].where(ds['ROI'] != 'CE', other=(16 / ds['ones'].where(ds['ROI'] == 'CE').sum().data))
+ds['anom_solid'] = ds['anom_solid'].where(ds['ROI'] != 'CW', other=(17 / ds['ones'].where(ds['ROI'] == 'CW').sum().data))
+ds['anom_solid'] = ds['anom_solid'].where(ds['ROI'] != 'NE', other=(6  / ds['ones'].where(ds['ROI'] == 'NE').sum().data))
+ds['anom_solid'] = ds['anom_solid'].where(ds['ROI'] != 'NO', other=(5  / ds['ones'].where(ds['ROI'] == 'NO').sum().data))
+ds['anom_solid'] = ds['anom_solid'].where(ds['ROI'] != 'NW', other=(22 / ds['ones'].where(ds['ROI'] == 'NW').sum().data))
+ds['anom_solid'] = ds['anom_solid'].where(ds['ROI'] != 'SE', other=(31 / ds['ones'].where(ds['ROI'] == 'SE').sum().data))
+ds['anom_solid'] = ds['anom_solid'].where(ds['ROI'] != 'SW', other=(4  / ds['ones'].where(ds['ROI'] == 'SW').sum().data))
 
+ds['anom_liquid'] = ds['ones']
+ds['anom_liquid'].attrs['description'] = 'Anomaly freshwater runoff and submarine melt scaled by sector contribution'
+ds['anom_liquid'] = ds['anom_liquid'].where(ds['ROI'] != 'CE', other=(10 / ds['ones'].where(ds['ROI'] == 'CE').sum().data))
+ds['anom_liquid'] = ds['anom_liquid'].where(ds['ROI'] != 'CW', other=(17 / ds['ones'].where(ds['ROI'] == 'CW').sum().data))
+ds['anom_liquid'] = ds['anom_liquid'].where(ds['ROI'] != 'NE', other=(5  / ds['ones'].where(ds['ROI'] == 'NE').sum().data))
+ds['anom_liquid'] = ds['anom_liquid'].where(ds['ROI'] != 'NO', other=(6  / ds['ones'].where(ds['ROI'] == 'NO').sum().data))
+ds['anom_liquid'] = ds['anom_liquid'].where(ds['ROI'] != 'NW', other=(17 / ds['ones'].where(ds['ROI'] == 'NW').sum().data))
+ds['anom_liquid'] = ds['anom_liquid'].where(ds['ROI'] != 'SE', other=(20 / ds['ones'].where(ds['ROI'] == 'SE').sum().data))
+ds['anom_liquid'] = ds['anom_liquid'].where(ds['ROI'] != 'SW', other=(25 / ds['ones'].where(ds['ROI'] == 'SW').sum().data))
 
-df = imbie.merge(S2021, left_index=True, right_index=True, how='outer')
-df.index.name = 'Date'
+ds['crs'] = True
+ds['crs'].attrs['grid_mapping_name'] = 'latitude_longitude'
 
-for _ in df.columns: # extend by 1 year for plotting w/ 'step'
-    df.loc[df[_].dropna().index[-1] + pd.offsets.DateOffset(years=1),_] = df[_].dropna().iloc[-1]
+for v in ds.data_vars:
+    ds[v].attrs['grid_mapping'] = 'crs'
+    if (v != 'crs') and (v != 'ROI'):
+        ds[v].attrs['_FillValue'] = 0
 
-fig, (ax, ax2, ax3) = plt.subplots(nrows=3, figsize=(4,7))
-kw = {'drawstyle':'steps'}
-(df['IMBIE']).diff().plot(ax=ax, **kw)
-(df['Antarctica']).diff().plot(ax=ax, **kw)
-ax.set_ylabel('Annual\nmass change [Gt]')
-(df['IMBIE'] - df['Antarctica']).diff().plot(ax=ax, linestyle='--', color='k', alpha=0.5, **kw)
-
-df[['IMBIE','Antarctica']]\
-    .rename(columns={'Antarctica':'Slater 2021 (AQ)'})\
-    .plot(ax=ax2, **kw)
-_ = ax2.set_ylabel('Cumulative\nmass change [Gt]')
-ax2r = ax2.twinx()
-ax2r.set_ylim(np.array(ax2.get_ylim()).astype(float)/-362)
-ax2r.set_ylabel('SLR [mm]')
-
-df[['Antarctica']]\
-    .rename(columns={'Antarctica':'AQ only (grounded)'})\
-    .plot(ax=ax3, **kw)
-df[['Antarctica',
-    'Ice Shelf Calving',
-    'Ice Shelf Thinning'
-    ]]\
-    .sum(axis='columns')\
-    [:'2015-12-31']\
-    .plot(ax=ax3, color='green', **kw)
-ax3.legend(['Grounded only (middle panel)','IS Calv + IC Thin + AQ'], fontsize=8)
-_ = ax3.set_ylabel('Cumulative\nfreshwater mass [Gt]')
+ds.attrs = {}        
+ds.attrs['Creator'] = 'Ken Mankoff'
+ds.attrs['email'] = 'ken.mankoff@nasa.gov'
+        
+ds.to_netcdf('./dat/fw.nc')
+print(ds)
 #+END_SRC
 
-#+ATTR_LATEX: :height 0.9\textheight
 #+RESULTS:
-[[file:./.ob-jupyter/fc07e4a0fe422414ee969936ad5676f7f6dec11b.png]]
+#+begin_example
+<xarray.Dataset>
+Dimensions:      (lat: 1440, lon: 2880)
+Coordinates:
+  ,* lat          (lat) float64 -89.94 -89.81 -89.69 -89.56 ... 89.69 89.81 89.94
+  ,* lon          (lon) float64 -179.9 -179.8 -179.7 -179.6 ... 179.7 179.8 179.9
+Data variables:
+    crs          bool True
+    ROI          (lat, lon) <U2 '' '' '' '' '' '' '' '' ... '' '' '' '' '' '' ''
+    ones         (lat, lon) int64 0 0 0 0 0 0 0 0 0 0 0 ... 0 0 0 0 0 0 0 0 0 0
+    anom         (lat, lon) float64 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    anom_solid   (lat, lon) float64 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    anom_liquid  (lat, lon) int64 0 0 0 0 0 0 0 0 0 0 0 ... 0 0 0 0 0 0 0 0 0 0
+Attributes:
+    Creator:  Ken Mankoff
+    email:    ken.mankoff@nasa.gov
+#+end_example
 
+#+BEGIN_SRC jupyter-python
+ds = xr.Dataset()
+
+step = 1/60
+ds['lon'] = np.arange(-180 + (step/2),180, step, dtype=np.float64)
+ds['lon'].attrs['units'] = 'degrees_north'
+
+ds['lat'] = np.arange(-90 + (step/2), 90, step, dtype=np.float64)
+ds['lat'].attrs['units'] = 'degrees_east'
+
+ds['crs'] = True
+ds['crs'].attrs['grid_mapping_name'] = 'latitude_longitude'
+
+ds['ROI'] = (('lon','lat'), np.zeros((ds['lon'].size, ds['lat'].size), dtype='U2'))
+# ds['ROI'].attrs['_FillValue'] = ''
+ds['ROI'].attrs['grid_mapping'] = 'crs'
+ds['ROI'].attrs['ROI_source'] = 'Mouginot /et al./ (2019); https://doi.org/10.7280/D1WT11'
+
+## Example: Can set fields with:
+# ds['ROI'][:,np.where(ds['lat'] == 80)[0][0]:np.where(ds['lat'] == 90)[0][0]] = 'NO'
+## Let's create a small function to help with that.
+
+def lati(val): return np.where(ds['lat'] == val)[0][0] # lat index
+def loni(val): return np.where(ds['lon'] == val)[0][0]
+# use like: ds['ROI'][:,lati(80):lati(90)+1] = 'NO'
+
+ds['ROI'][loni(ds.isel(27,38] = 'SW'
+# ds['ROI'][ds.isel(27,38] = 'SW'
+# ds['region'][26,39] = 'SW'
+# ds['region'][25,40] = 'SW'
+
+# ds['region'][27,38] = 'SE'
+# ds['region'][27,38] = 'SE'
+# ds['region'][27,38] = 'SE'
+
+
+ds.attrs['Creator'] = 'Ken Mankoff'
+ds.attrs['email'] = 'ken.mankoff@nasa.gov'
+ds.to_netcdf('icesheet_runoff_mask.nc')
+print(ds)
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+<xarray.Dataset>
+Dimensions:  (lon: 2881, lat: 1441)
+Coordinates:
+  ,* lon      (lon) float64 -180.0 -179.9 -179.8 -179.6 ... 179.8 179.9 180.0
+  ,* lat      (lat) float64 -90.0 -89.88 -89.75 -89.62 ... 89.62 89.75 89.88 90.0
+Data variables:
+    crs      bool True
+    ROI      (lon, lat) <U2 '' '' '' '' '' '' '' ... 'NO' 'NO' 'NO' '' '' ''
+Attributes:
+    Creator:  Ken Mankoff
+    email:    ken.mankoff@nasa.gov
+#+end_example
 
 
 * Summary
-** Question
+** Questions & To Do
 
-+ [ ] How to extend time series?
-+ [ ] Where is high-res (1x1) =GLMELT= mask located?
-+ [ ] Should we include Arctic Sea Ice & Antarctic Sea Ice changes?
-  + [ ] If so, on what mask?
-+ [ ] How to define new mask?
-  + [ ] Regional contribution to mass loss
-+ [ ] Should we redefine baseline mask?
-  + [ ] Currently is 1 everywhere (uniform spread)
-  + [ ] Should be based on only negative mass terms
-    + Surface melt
-    + Iceberg discharge & submarine melt
-    + [ ] Parameterize iceberg drift and melt to far-field?
-
-** To Do
-
-+ [ ] Write freshwater anomaly to ModelE file format
-+ [ ] Create new mask
-  + [ ] Redefine baseline mask
-+ [ ] Modify ModelE to use new mask + FW forcing
++ [ ] Updated baseline mask
+  + [ ] Include N. Greenland
+  + [ ] Treat spatial variability
+  + [ ] Separate (liquid runoff & submarine melt) v. solid discharge
++ [ ] Anomaly: determine regional distribution of
+  + [ ] Liquid runoff & submarine melt
+  + [ ] Solid ice discharge
++ [ ] Build anomaly distribution masks for each of these
 
 * Appendix                                            :B_appendix:
 :PROPERTIES:
