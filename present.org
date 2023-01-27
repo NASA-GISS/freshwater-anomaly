@@ -36,15 +36,13 @@
   - [[#compare-mankoff-2021--slater-2021][Compare Mankoff 2021 & Slater 2021]]
   - [[#greenlandic-peripheral-glaciers][Greenlandic Peripheral glaciers]]
   - [[#greenlandic-icebergs-vs-runoff--submarine-melt][Greenlandic icebergs vs. (runoff & submarine melt)]]
+  - [[#greenland-mass-loss-by-roi-gt-yr-1][Greenland mass loss by ROI [Gt yr^{-1}]]]
+  - [[#greenland-mass-loss-by-roi-][Greenland mass loss by ROI]]
 - [[#antarctica][Antarctica]]
   - [[#imbie-2018][IMBIE 2018]]
   - [[#imbie-2018-vs-slater-2021][IMBIE 2018 vs Slater 2021]]
   - [[#antarctic-icebergs][Antarctic icebergs]]
-- [[#freshwater-anomalies][Freshwater Anomalies]]
-  - [[#greenland-mass-loss-by-roi][Greenland mass loss by ROI]]
-  - [[#greenland-iceberg-by-roi][Greenland iceberg by ROI]]
-  - [[#greenland-stream-discharge-by-roi][Greenland stream discharge by ROI]]
-  - [[#greenland-freshwater-by-roi][Greenland freshwater by ROI]]
+  - [[#iceberg-distribution][Iceberg distribution]]
 - [[#freshwater-distribution-mask][Freshwater distribution mask]]
   - [[#introduction-1][Introduction]]
   - [[#modele-mask][ModelE Mask]]
@@ -76,15 +74,51 @@ This workbook computes freshwater anomaly from Greenland and Antarctica for the 
 
 ** Numbers and units
 
-+ 1 Gt = 1 km^{3}
-+ 360 Gt \(\sim\)= 1 mm SLR
++ 1 Gt = 1 km^{3} (freshwater)
++ 360 Gt \(\approx\) 1 mm SLR
++ 1 Sv = 31556 km^{3} yr^{-1} (\(\sim\) \pi 10^{4} km^{3} yr^{-1})
 
 ** Overview numbers
 :PROPERTIES:
 :BEAMER_opt: shrink=9
 :END:
 
-+ Greenland *net* ice mass loss: \(\sim\)180 Gt yr^{-1} since 1990 citep:mankoff_2021
+#+BEGIN_SRC jupyter-python
+import xarray as xr
+ds = xr.open_dataset('/home/kdm/data/Mankoff_2021/203/MB_region.nc')\
+    .sum(dim='region')\
+    .resample({'time':'YS'})\
+    .sum()['MB']
+
+dd = ds.sel({'time':slice('1990-01-01','1999-12-31')}).mean(dim='time')
+print('1990-1999: ', dd.data, dd.data/-362)
+
+dd = ds.sel({'time':slice('1990-01-01','2019-12-31')}).mean(dim='time')
+print('1990-2019: ', dd.data, dd.data/-362)
+
+dd = ds.sel({'time':slice('2000-01-01','2019-12-31')}).mean(dim='time')
+print('2000-2019: ', dd.data, dd.data/-362)
+
+dd = ds.sel({'time':slice('2010-01-01','2019-12-31')}).mean(dim='time')
+print('2010-2019: ', dd.data, dd.data/-362)
+
+dd = ds.sel({'time':slice('2010-01-01','2019-12-31')}).resample({'time':'YS'}).mean()
+dd = dd.where((dd.time.dt.year != 2019) & (dd.time.dt.year != 2012)).mean()
+print('2010-2019 (excl 2012 & 2019): ', dd.data, dd.data/-362)
+#+END_SRC
+
+#+RESULTS:
+: 1990-1999:  -67.26179 0.185806042581632
+: 1990-2019:  -159.87126 0.44163331932784444
+: 2000-2019:  -206.176 0.5695469471631129
+: 2010-2019:  -246.02238 0.6796198470816428
+: 2010-2019 (excl 2012 & 2019):  -203.1928 0.5613060629828859
+
+
++ Greenland *net* ice mass loss citep:mankoff_2021
+  + \(\sim\)160 Gt yr^{-1} (0.44 mm yr^{-1}) since 1990
+  + \(\sim\)200 Gt yr^{-1} (0.55 mm yr^{-1}) since 2000
+  + \(\sim\)245 Gt yr^{-1} (0.68 mm yr^{-1}) since 2010
 
 {{{SKIPLINE}}}
 
@@ -95,10 +129,10 @@ This workbook computes freshwater anomaly from Greenland and Antarctica for the 
   + Some surface rivers, most submarine
   + Highly seasonal (most in summer)
   + Highly variable interannual
-+ From the above, ice sheet mass gain (snowfall) should be \(\sim\)600--800 Gt yr^{-1} 
 
 {{{SKIPLINE}}}
 
++ From the above, ice sheet mass gain (snowfall) should be \(\sim\)600--800 Gt yr^{-1} 
 + Another \(\sim\)120 Gt yr^{-1} land runoff (rain/snow on non-ice-sheet land) citep:mankoff_2020_liquid
 
 ** Global ice mass change
@@ -263,18 +297,176 @@ _ = axr.set_ylabel('SLR [mm]')
 
 ** Greenlandic icebergs vs. (runoff & submarine melt)
 
+*** Text                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.6
+:END:
+
 + Surface melt and submarine melt should be introduced at the coast
 + Icebergs may melt farther away
-  + However, icebergs in Greenland generally do not travel far
-  + https://sentinel.esa.int/web/success-stories/-/greenland-iceberg-chart
-  + http://polarportal.dk/en/sea-ice-and-icebergs/icebergs/
-  + TODO: check https://nsidc.org/data/g00807/versions/1
++ However, icebergs in Greenland generally do not travel far
++ https://sentinel.esa.int/web/success-stories/-/greenland-iceberg-chart
++ http://polarportal.dk/en/sea-ice-and-icebergs/icebergs/
+
+*** Figure                                                 :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.4
+:END:
+
+#+ATTR_LATEX: :height 0.8\textheight
+[[./fig/Greenland-Iceberg-Chart.jpg]]
+
+** Greenland mass loss by ROI [Gt yr^{-1}]
+
+#+NAME: mb_roi
+#+BEGIN_SRC jupyter-python :exports none :cache yes
+import xarray as xr
+fname = '/home/kdm/data/Mankoff_2021/203/MB_region.nc'
+ds = xr.open_dataset(fname)
+df_mb = ds['MB_ROI']\
+    .sel({'time':slice('2000-01-01','2019-12-31')})\
+    .resample({'time':'YS'}).sum()\
+    .rename('Mass')\
+    .mean(dim='time')\
+    .to_dataframe()\
+    .abs()
+df_mb
+#+END_SRC
+
+#+RESULTS[(2023-01-27 07:26:53) 646cf553e2d9e39736442a79518f247aa28bb28a]: mb_roi
+| region |    Mass |
+|--------+---------|
+| NE     |  24.798 |
+| CE     | 1.40612 |
+| SE     | 10.9155 |
+| SW     | 23.1028 |
+| CW     | 50.2505 |
+| NW     | 59.8585 |
+| NO     |  35.811 |
+
+#+NAME: iceberg_roi
+#+BEGIN_SRC jupyter-python :exports none :cache yes
+import pandas as pd
+fname = '/home/kdm/data/Mankoff_2020/ice/region_D.csv'
+df_ice = pd.read_csv(fname, index_col=0, parse_dates=True)
+df_ice = pd.DataFrame(df_ice['1990':'2020'].resample('YS').mean().mean())
+df_ice.index.name = 'region'
+df_ice.columns = ['Discharge']
+df_ice
+#+END_SRC
+
+#+RESULTS[(2023-01-27 07:27:02) 67c3d0752fd16cd80ef00bbf168408a6e595a5b9]: iceberg_roi
+| region | Discharge |
+|--------+-----------|
+| CE     |   74.5944 |
+| CW     |   79.8808 |
+| NE     |   25.0692 |
+| NO     |   24.1457 |
+| NW     |   99.2541 |
+| SE     |   148.667 |
+| SW     |   20.5418 |
+
+#+BEGIN_SRC jupyter-python :exports none :eval no
+### Warning: Run 1x in clean session. Compute intensive.
+import xarray as xr
+ds = xr.open_dataset('/home/kdm/data/Mankoff_2020/water/ice/MAR.nc',
+                     chunks={'time':365, 'station':100})
+ds = ds[['M2019_region','discharge']]
+ds = ds.sel({'time':slice('1990-01-01','2019-12-31')})\
+       .groupby('M2019_region')\
+       .sum()
+
+delayed_obj = ds.to_netcdf('tmp/MAR.nc', compute=False)
+from dask.diagnostics import ProgressBar
+with ProgressBar():
+    results = delayed_obj.compute()
+#+END_SRC
+
+#+NAME: stream_roi
+#+BEGIN_SRC jupyter-python :exports none :cache yes
+import xarray as xr
+ds = xr.open_dataset('./tmp/MAR.nc')
+
+m3s_to_km3yr = 0.03155
+df_stream = ds['discharge'].to_dataframe().unstack().T
+df_stream.index = [_[1] for _ in df_stream.index]
+df_stream = df_stream.resample('YS').mean() * m3s_to_km3yr
+
+df_stream = pd.DataFrame(df_stream.mean())
+df_stream.index.name = 'region'
+df_stream.columns = ['Runoff']
+df_stream
+#+END_SRC
+
+#+RESULTS[(2023-01-27 07:27:27) af0b8342115f1512478aac53eac87a5db1f49271]: stream_roi
+| region |  Runoff |
+|--------+---------|
+| CE     | 56.8306 |
+| CW     |  43.505 |
+| NE     | 49.1332 |
+| NO     | 40.4823 |
+| NW     |  50.519 |
+| SE     |  74.169 |
+| SW     | 118.234 |
+
+# COMBINE
+
+#+BEGIN_SRC jupyter-python :noweb yes :exports results
+kw = {'right_index':True, 'left_index':True}
+df = df_mb.merge(df_ice, **kw).merge(df_stream, **kw)
+df.loc['TOTAL'] = df.sum(axis='rows')
+df.round()
+#+END_SRC
+
+#+RESULTS:
+| region | Mass | Discharge | Runoff |
+|--------+------+-----------+--------|
+| NE     |   25 |        25 |     49 |
+| CE     |    1 |        75 |     57 |
+| SE     |   11 |       149 |     74 |
+| SW     |   23 |        21 |    118 |
+| CW     |   50 |        80 |     44 |
+| NW     |   60 |        99 |     51 |
+| NO     |   36 |        24 |     40 |
+| TOTAL  |  206 |       472 |    433 |
+
+Recall: \(\sim\)50 % discharge is submarine melt (runoff)
+
+** Greenland mass loss by ROI [%]
+
+#+BEGIN_SRC jupyter-python :noweb yes :exports results
+kw = {'right_index':True, 'left_index':True}
+df = df_mb.merge(df_ice, **kw).merge(df_stream, **kw)
+
+norm_df = df * (1/df.sum())
+norm_df = (norm_df * 100).round()
+norm_df.loc['TOTAL'] = norm_df.sum()
+norm_df.sort_index()
+#+END_SRC
+
+#+RESULTS:
+| region | Mass | Discharge | Runoff |
+|--------+------+-----------+--------|
+| CE     |    1 |        16 |     13 |
+| CW     |   24 |        17 |     10 |
+| NE     |   12 |         5 |     11 |
+| NO     |   17 |         5 |      9 |
+| NW     |   29 |        21 |     12 |
+| SE     |    5 |        31 |     17 |
+| SW     |   11 |         4 |     27 |
+| TOTAL  |   99 |        99 |     99 |
+
+
 
 * Antarctica
 ** IMBIE 2018
 
 + IMBIE citep:imbie_2018 has a longer records: 1992 through 2018 (and ongoing updates)
 + http://imbie.org/data-downloads/
+
+{{{SKIPLINE}}}
+
+However, IMBIE does not have ice shelf thinning or calving
 
 ** IMBIE 2018 vs Slater 2021
 
@@ -378,158 +570,83 @@ _ = ax3.set_xlim(xlim)
 #+RESULTS:
 [[file:./fig/slater_v_imbie.png]]
 
-** TODO Antarctic icebergs
+** Antarctic icebergs
 
-+ https://www.scp.byu.edu/data/iceberg/
-+ https://www.scar.org/resources/iceberg-database/
-+ DOI: https://doi.org/10.1017/jog.2022.84
-+ https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=8247260
++ [X] https://www.scp.byu.edu/data/iceberg/ citep:budge_2018
+  + 1978 through 2018
 
-* Freshwater Anomalies
-** Greenland mass loss by ROI
-*** Code                                                   :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.6
-:END:
+#+ATTR_LATEX: :height 0.5\textheight
+[[./fig/budge_2018.png]]    
 
-#+NAME: mb_distribution
-#+BEGIN_SRC jupyter-python :exports both
-import xarray as xr
-fname = '/home/kdm/data/Mankoff_2021/203/MB_region.nc'
-ds = xr.open_dataset(fname)
-df = ds['MB_ROI']\
-    .rename('Mass loss [%]')\
-    .mean(dim='time')\
-    .to_dataframe()\
-    .abs()
++ [-] https://www.scar.org/resources/iceberg-database/ citep:orheim_2022
+  + Biased by method: ship observations
 
-norm_df = df * (1/df.sum())
-norm_df = (norm_df * 100).round().astype(int)
-norm_df.loc['TOTAL'] = norm_df.sum()
-norm_df.sort_index()
-#+END_SRC
+** Iceberg distribution                                 :noexport:
 
-*** Results                                                :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.4
-:ID:       20230126T103911
-:END:
-
-#+RESULTS: mb_distribution
-| region | Mass loss [%] |
-|--------+---------------|
-| CE     |             3 |
-| CW     |            24 |
-| NE     |            12 |
-| NO     |            19 |
-| NW     |            32 |
-| SE     |             5 |
-| SW     |             6 |
-| TOTAL  |           101 |
-
-** Greenland iceberg by ROI
-*** Code                                                   :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.6
-:END:
-
-#+NAME: iceberg_distribution
-#+BEGIN_SRC jupyter-python :exports both
+#+BEGIN_SRC jupyter-python
 import pandas as pd
-fname = '/home/kdm/data/Mankoff_2020/ice/region_D.csv'
-df = pd.read_csv(fname, index_col=0, parse_dates=True)
-df = pd.DataFrame(df['1990':'2020'].mean())
-df.index.name = 'region'
-df.columns = ['Mass loss [%]']
+import glob
 
-norm_df = df * (1/df.sum())
-norm_df = (norm_df * 100).round().astype(int)
-norm_df.loc['TOTAL'] = norm_df.sum()
-norm_df.sort_index()
+root = '/home/kdm/data/Budge_2018/consol'
+csvs = glob.glob(root + '/*.csv')
+
+lon,lat = [],[]
+for csv in csvs:
+    df = pd.read_csv(csv, parse_dates=True, index_col='date')
+    for i,c in enumerate(df.columns):
+        if df[c].min() == df[c].max():
+            continue
+        if np.all(df[c] < 0):
+            alat = df[c]
+            alon = df[df.columns[i+1]]
+            break
+
+        lon = lon + list(alon)
+        lat = lat + list(alat)
+
+# plt.scatter(lon,lat)
+pd.DataFrame(np.vstack((lon,lat)).T).to_csv('./tmp/lonlat.csv', index=False, header=None)
+
 #+END_SRC
 
-*** Results                                                :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.4
-:ID:       20230126T103911
-:END:
 
-#+RESULTS: iceberg_distribution
-| region | Mass loss [%] |
-|--------+---------------|
-| CE     |            16 |
-| CW     |            17 |
-| NE     |             6 |
-| NO     |             5 |
-| NW     |            22 |
-| SE     |            31 |
-| SW     |             4 |
-| TOTAL  |           101 |
+EPSG 3031
+#+BEGIN_SRC bash
+grass -c epsg:3031 ./G_AQ
 
+eval $(m.proj -i input=tmp/lonlat.csv separator=comma,pipe |r.in.xyz input=- -sg)
+g.region -pa n=$n s=-$n e=$(echo -1*$w|bc) w=$w res=100000 -s
 
-** Greenland stream discharge by ROI
-*** Code                                                   :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.6
-:END:
+m.proj -i input=tmp/lonlat.csv sep=comma,pipe | v.in.ascii input=- output=pts
 
-#+NAME: stream_distribution
-#+BEGIN_SRC jupyter-python :exports both :async yes
-import xarray as xr
-ds = xr.open_dataset('/home/kdm/data/Mankoff_2020/water/ice/MAR.nc')
-ds2 = ds.sel({'time':slice('1990-01-01','2019-12-31')}).sum(dim='time')
-df = ds2.groupby('M2019_region').mean()['discharge'].to_dataframe()
+# d.mon wx0
+# d.vect pts
 
-norm_df = df * (1/df.sum())
-norm_df = (norm_df * 100).round().astype(int)
-norm_df.loc['TOTAL'] = norm_df.sum()
-norm_df.sort_index()
+m.proj -i input=tmp/lonlat.csv sep=comma,pipe | r.in.xyz input=- output=bin method=n
+r.mapcalc "bin10 = log(10,bin)"
+
+# d.rast bin
 #+END_SRC
 
-*** Results                                                :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.4
-:ID:       20230126T103911
-:END:
+EPSG 3031
+#+BEGIN_SRC bash
+grass -c epsg:4326 ./G_AQ
 
+# g.region -pas res=0.125 s=-90 n=-45 e=-180 w=180
+g.region -pas res=0.5 s=-90 n=-45 e=-180 w=180
+v.in.ascii -n input=tmp/lonlat.csv sep=comma output=pts
+cat tmp/lonlat.csv | sed 's/$/,1/' | r.in.xyz input=- separator=comma output=bin method=n
+r.mapcalc "bin10 = log(10,bin)"
+# d.rast bin
+#+END_SRC
 
-#+RESULTS: stream_distribution
-| M2019_region   |   discharge |
-|----------------+-------------|
-| CE             |          10 |
-| CW             |          17 |
-| NE             |           5 |
-| NO             |           6 |
-| NW             |          17 |
-| SE             |          20 |
-| SW             |          25 |
-| TOTAL          |         100 |
-
-** Greenland freshwater by ROI
-*** Total                                                  :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.33
-:END:
-**** Total
-
-c
-
-*** Iceberg                                                :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.33
-:END:
-**** Iceberg
-
-b
-
-*** Runoff                                                 :BMCOL:
-:PROPERTIES:
-:BEAMER_col: 0.33
-:END:
-**** Runoff
-
-a
-
+To Do:
++ AQ solids
+  + Spatial distribution of solid FW forcing may be unnecessary detail
+  + Where icebergs are seen may be where they are not melting (observer bias)
+  + Can distribute evenly around continent, or evenly where observed, or based on observation density
++ AQ liquids
+  + Should be pegged to ice shelf edge
 * Freshwater distribution mask
 ** Introduction
 
