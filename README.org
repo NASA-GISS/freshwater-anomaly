@@ -1,6 +1,6 @@
 * Table of contents                               :toc_2:noexport:
 - [[#introduction][Introduction]]
-  - [[#process-to-modele-format][Process to ModelE format]]
+  - [[#greenland-mass-balance][Greenland mass balance]]
 
 * Introduction
 
@@ -12,11 +12,11 @@ Generate freshwater anomaly data files and distribution mask for ModelE
 See [[./present.org]] for a digital workbook.
 
 
-** Process to ModelE format                             :noexport:
+** Greenland mass balance
 
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC jupyter-python :exports both
 import pandas as pd
-df = pd.read_csv('./input/mankoff_2021.csv',
+df = pd.read_csv('~/data/Mankoff_2021/448/MB_SMB_D_BMB.csv',
                  parse_dates = True,
                  index_col = 0)
 
