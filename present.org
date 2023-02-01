@@ -52,6 +52,8 @@
   - [[#antarctic-icebergs][Antarctic icebergs]]
   - [[#iceberg-distribution][Iceberg distribution]]
   - [[#fw-forcing-distribution][FW forcing distribution]]
+  - [[#aq-by-roi][AQ by ROI]]
+  - [[#aq-by-roi-1][AQ by ROI]]
 - [[#freshwater-distribution-mask][Freshwater distribution mask]]
   - [[#introduction-1][Introduction]]
   - [[#existing-mask][Existing mask]]
@@ -62,7 +64,8 @@
   - [[#greenland-mask][Greenland mask]]
   - [[#antarctic-mask-][Antarctic mask ???]]
   - [[#new-mask-contents][New mask contents]]
-  - [[#new-mask-visualization][New mask visualization]]
+  - [[#new-mask-visualization-greenland][New mask visualization (Greenland)]]
+  - [[#new-mask-visualization-antarctica][New mask visualization (Antarctica)]]
 - [[#summary-2][Summary]]
   - [[#questions--to-do][Questions & To Do]]
 - [[#appendix][Appendix]]
@@ -451,9 +454,7 @@ df.round()
 | TOTAL  |  206 |       472 |    433 |
 
 + Recall: \(\sim\)50 % discharge is submarine melt (runoff)
-+ Spatial distribution doesn't matter (from previous slide)
-+ Energy might?
-
++ Distance from coast is all \(\sim\)0 (from previous slide)
 
 ** Greenland mass loss by ROI [%]
 :PROPERTIES:
@@ -646,12 +647,12 @@ df[df < 0].head(25).fillna(0)
 
 ** Comments on previous slide
 
-For monthly freshwater anomaly...
 + Doesn't make sense to estimate from total mass balance
   + Feb and March with mass loss (probably) comes from steady ice discharge and low snowfall
++ Solid discharge roughly steady intra-annual
 + Better to estimate FW anomaly from stream discharge product
   + Need to define some monthly baseline
-  + Then consider anomaly from baseline?
+  + Then consider anomaly from baseline
 
 ** Stream discharge: baseline [Gt/month] (1960--1989) 
 
@@ -765,8 +766,8 @@ pct.round()
 
 {{{SKIPLINE}}}
 
-+ Can build baseline distribution maps for solid & liquid
-+ Can build anomaly distribution maps for solid & liquid
++ Can build *baseline* distribution maps for solid & liquid
++ Can build *anomaly* distribution maps for solid & liquid
 + Can provide annual or monthly solid and liquid forcing
 
 * Antarctica
@@ -953,14 +954,53 @@ r.mapcalc "bin10 = log(10,bin)"
 
 ** FW forcing distribution
 
+*** Text                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.7
+:END:
+
 + AQ solids
   + Spatial distribution of solid FW forcing may be unnecessary detail
-  + Where icebergs are seen may be where they are not melting (observer bias)
+  + Where icebergs are seen may be where they are not melting (survivorship bias)
   + Can distribute evenly around continent, or evenly where observed, or based on observation density
 + AQ liquids
   + Should be pegged to ice shelf edge
   + Do not have by shelf, only total for the continent
 
+*** Fig                                                    :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.3
+:END:
+
+[[./fig/Survivorship-bias.svg.png]]
+
+** AQ by ROI
+
+[[./fig/rignot_2019_table2.png]]
+
+\(dM\) is anomaly including gains; does not distinguish calving vs. melt
+Baseline period is 14*360 = 5040 Gt or 5040/(2017-1979+1) = 130 Gt yr^{-1} 
+
+citet:rignot_2019
+
+** AQ by ROI
+
+#+ATTR_LATEX: :height 0.85\textheight
+[[./fig/rignot_2019_fig2.png]]
+
+citet:rignot_2019 
+
+** COMMENT Antarctica Forcing by ROI
+
+From citet:rignot_2019
+
+| Region    |  Ds |   Dd |
+|-----------+-----+------|
+| Peninsula |  +3 |  -45 |
+| West      | -27 | -132 |
+| East      | -14 | -37  |
+
+    
 * Freshwater distribution mask
 ** Introduction
 
@@ -1514,7 +1554,7 @@ variables:
 
 
 
-** New mask visualization
+** New mask visualization (Greenland)
 
 #+BEGIN_SRC jupyter-python :results verbatim :exports results
 import xarray as xr
@@ -1527,6 +1567,18 @@ _ = (ds['anom']).sel({'lat':slice(50,90),'lon':slice(-90,0)}).plot()
 #+ATTR_LATEX: :height 0.9\textheight
 #+RESULTS:
 [[file:./.ob-jupyter/0c5e574a5639bd4ead38ebfe27bfc7ca2a1e11d0.png]]
+
+** New mask visualization (Antarctica)
+
+#+BEGIN_SRC jupyter-python :results verbatim :exports results
+import xarray as xr
+ds = xr.open_dataset('./dat/fw.nc')
+_ = (ds['anom']).sel({'lat':slice(-90,-40)}).plot()
+#+END_SRC
+
+#+ATTR_LATEX: :height 0.9\textheight
+#+RESULTS:
+[[file:./.ob-jupyter/e92b8fc82643214c6a7a99d6755b6205163c70af.png]]
 
 * Summary
 ** Questions & To Do                                    :noexport:
@@ -1547,6 +1599,7 @@ _ = (ds['anom']).sel({'lat':slice(50,90),'lon':slice(-90,0)}).plot()
 ** References
 :PROPERTIES:
 :BEAMER_opt: allowframebreaks,label=
+:BEAMER_opt: shrink=10
 :END:
 
 #+LATEX_HEADER_EXTRA: \renewcommand*{\bibfont}{\small}
@@ -1573,7 +1626,7 @@ embedded. If you are viewing:
 
 *** Title Page
 
-#+BEAMER_HEADER: \subtitle{GL \& AQ}
+#+BEAMER_HEADER: \subtitle{\url{https://github.com/NASA-GISS/freshwater-anomaly}}
 #+BEAMER_HEADER: \institute[]{NASA GISS}
 
 #+BEAMER_HEADER: \titlegraphic{\includegraphics[height=1.0cm]{/home/kdm/Documents/templates/logos/NASA.png}}
