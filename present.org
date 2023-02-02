@@ -46,6 +46,7 @@
   - [[#stream-discharge-anomaly-gtmonth-1990--2019-base][Stream discharge: anomaly [Gt/month] ((1990--2019)-base)]]
   - [[#stream-discharge-anomaly--anom---basebase][Stream discharge: anomaly[(anom - base)/base]]]
   - [[#summary-1][Summary]]
+  - [[#output][Output]]
 - [[#antarctica][Antarctica]]
   - [[#imbie-2018][IMBIE 2018]]
   - [[#imbie-2018-vs-slater-2021][IMBIE 2018 vs Slater 2021]]
@@ -54,6 +55,7 @@
   - [[#fw-forcing-distribution][FW forcing distribution]]
   - [[#aq-by-roi][AQ by ROI]]
   - [[#aq-by-roi-1][AQ by ROI]]
+  - [[#output-1][Output]]
 - [[#freshwater-distribution-mask][Freshwater distribution mask]]
   - [[#introduction-1][Introduction]]
   - [[#existing-mask][Existing mask]]
@@ -770,6 +772,72 @@ pct.round()
 + Can build *anomaly* distribution maps for solid & liquid
 + Can provide annual or monthly solid and liquid forcing
 
+** Output
+
+#+BEGIN_SRC jupyter-python :exports both
+import pandas as pd
+df = pd.read_csv('~/data/Mankoff_2021/448/MB_SMB_D_BMB.csv',
+                 parse_dates = True,
+                 index_col = 0)
+
+df = df.loc['1990-01-01':'2019-12-31']\
+    .resample('YS')\
+    .sum()\
+    .round(1)\
+    ['MB']
+
+df.index = df.index.year
+
+f = open('GL_FW.csv', 'w')
+f.write('# Contact: ken.mankoff@nasa.gov\n')
+f.write('# See https://github.com/NASA-GISS/freshwater-anomaly\n')
+df.to_csv(f, header=False)
+f.close()
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC bash :results verbatim
+cat GL_FW.csv
+#+END_SRC
+
+
+#+RESULTS:
+#+begin_example
+# Contact: ken.mankoff@nasa.gov
+# See https://github.com/NASA-GISS/freshwater-anomaly
+1990,-138.7
+1991,-78.0
+1992,86.5
+1993,-91.2
+1994,-113.8
+1995,-212.3
+1996,131.9
+1997,7.2
+1998,-242.0
+1999,-47.1
+2000,-77.2
+2001,-26.0
+2002,-142.4
+2003,-167.3
+2004,-166.2
+2005,-168.4
+2006,-239.8
+2007,-257.3
+2008,-199.8
+2009,-241.1
+2010,-374.1
+2011,-330.2
+2012,-425.4
+2013,-100.2
+2014,-182.2
+2015,-213.2
+2016,-255.5
+2017,-101.4
+2018,-73.0
+2019,-411.9
+#+end_example
+
 * Antarctica
 ** IMBIE 2018
 
@@ -1001,6 +1069,88 @@ From citet:rignot_2019
 | East      | -14 | -37  |
 
     
+** Output
+
+#+BEGIN_SRC jupyter-python
+import pandas as pd
+
+kw = {'parse_dates':True, 'index_col':0}
+shelf_calving = pd.read_csv('./input/iceshelves_calving_cumul_1994_2017_annual.csv', names=['Ice Shelf Calving'], **kw)
+shelf_thinning = pd.read_csv('./input/iceshelves_thinning_cumul_1994_2017_annual.csv', names=['Ice Shelf Thinning'], **kw)
+AQ = pd.read_csv('./input/AIS_cumul_1994_2017_annual.csv', names=['Antarctica'], **kw)
+kw = {'left_index':True, 'right_index':True, 'how':'outer'}
+df = shelf_calving.merge(shelf_thinning, **kw).merge(AQ, **kw)
+df.index.name = 'Date'
+
+df['Total'] = df[['Antarctica','Ice Shelf Calving','Ice Shelf Thinning']].sum(axis='columns')
+df.index.freq = 'AS'
+
+# Extrapolate the index first based on original index
+df = pd.DataFrame(data=df,
+                  index=pd.date_range(
+                      start=df.index[0] - pd.Timedelta(value=365*5, unit='d'),
+                      periods=len(df.index) + 7,
+                      freq=df.index.freq))
+
+df.iloc[:4] = df.iloc[4:7].mean()
+df.iloc[:4] = df.iloc[4:7].mean()
+df.iloc[-3:] = df.iloc[-6:-3].mean()
+
+df = df['Total'].round(1)
+
+df.index = df.index.year
+f = open('AQ_FW.csv', 'w')
+f.write('# Contact: ken.mankoff@nasa.gov\n')
+f.write('# See https://github.com/NASA-GISS/freshwater-anomaly\n')
+df.to_csv(f, header=False)
+f.close()
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC bash :results verbatim
+cat AQ_FW.csv
+#+END_SRC
+
+
+#+RESULTS:
+#+begin_example
+# Contact: ken.mankoff@nasa.gov
+# See https://github.com/NASA-GISS/freshwater-anomaly
+1990,-349.4
+1991,-349.4
+1992,-349.4
+1993,-349.4
+1994,-248.3
+1995,-358.5
+1996,-441.4
+1997,-595.8
+1998,-783.6
+1999,-1283.5
+2000,-1711.7
+2001,-2142.1
+2002,-2419.0
+2003,-2843.6
+2004,-3331.8
+2005,-3785.5
+2006,-4332.6
+2007,-5012.1
+2008,-5612.7
+2009,-6147.5
+2010,-6732.8
+2011,-7149.4
+2012,-7593.2
+2013,-8092.8
+2014,-8549.7
+2015,-8931.0
+2016,-9088.2
+2017,-8856.3
+2018,-8856.3
+2019,-8856.3
+#+end_example
+
+
+
 * Freshwater distribution mask
 ** Introduction
 
@@ -1384,8 +1534,17 @@ for v in ds.data_vars:
 ds.attrs = {}        
 ds.attrs['Creator'] = 'Ken Mankoff'
 ds.attrs['email'] = 'ken.mankoff@nasa.gov'
+ds.attrs['source'] = 'https://github.com/NASA-GISS/freshwater-anomaly'
         
 ds.to_netcdf('./dat/fw.nc')
+
+# current resolution: 1/8
+ds_coarse = ds['ones'].coarsen(lat=int(2/(1/8))).median().coarsen(lon=int(2.5/(1/8))).median()
+ds_coarse = ds_coarse.round() # Median doesn't seem to work. Xarray bug?
+ds_coarse.to_netcdf('./dat/fw_144x90.nc')
+
+# Trickier: non-uniform lat bins
+# ds['ones'].coarsen(lat=int(4/(1/8))).mean().coarsen(lon=int(5/(1/8))).mean().to_netcdf('./dat/fw_4x5.nc')
 print(ds)
 #+END_SRC
 
@@ -1406,6 +1565,7 @@ Data variables:
 Attributes:
     Creator:  Ken Mankoff
     email:    ken.mankoff@nasa.gov
+    source:   https://github.com/NASA-GISS/freshwater-anomaly
 #+end_example
 
 *** NOT USED                                            :noexport:
