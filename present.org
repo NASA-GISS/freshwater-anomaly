@@ -1543,8 +1543,10 @@ ds.attrs['source'] = 'https://github.com/NASA-GISS/freshwater-anomaly'
 ds.to_netcdf('./dat/fw.nc')
 
 # current resolution: 1/8
-ds_coarse = ds['ones'].coarsen(lat=int(2/(1/8))).median().coarsen(lon=int(2.5/(1/8))).median()
-ds_coarse = ds_coarse.round() # Median doesn't seem to work. Xarray bug?
+ds_coarse = ds.drop('ROI').coarsen(lat=int(2/(1/8))).median().coarsen(lon=int(2.5/(1/8))).median()
+ds_coarse['ROI'] = ds['ROI'].sel({'lat':ds_coarse['lat'],'lon':ds_coarse['lon']}, method='nearest')
+ds_coarse['ones'] = ds_coarse['ones'].round() # Median doesn't seem to work. Xarray bug?
+ds_coarse = ds_coarse.rename({'ones':'mask'})
 ds_coarse.to_netcdf('./dat/fw_144x90.nc')
 
 # Trickier: non-uniform lat bins
