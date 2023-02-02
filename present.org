@@ -789,9 +789,10 @@ df = df.loc['1990-01-01':'2019-12-31']\
 df.index = df.index.year
 
 f = open('GL_FW.csv', 'w')
-f.write('# Contact: ken.mankoff@nasa.gov\n')
+f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
 f.write('# See https://github.com/NASA-GISS/freshwater-anomaly\n')
-df.to_csv(f, header=False)
+f.write('# Year\tGt/yr\n')
+df.to_csv(f, header=False, sep='\t')
 f.close()
 #+END_SRC
 
@@ -804,38 +805,39 @@ cat GL_FW.csv
 
 #+RESULTS:
 #+begin_example
-# Contact: ken.mankoff@nasa.gov
+# Contact: Ken Mankoff <ken.mankoff@nasa.gov>
 # See https://github.com/NASA-GISS/freshwater-anomaly
-1990,-138.7
-1991,-78.0
-1992,86.5
-1993,-91.2
-1994,-113.8
-1995,-212.3
-1996,131.9
-1997,7.2
-1998,-242.0
-1999,-47.1
-2000,-77.2
-2001,-26.0
-2002,-142.4
-2003,-167.3
-2004,-166.2
-2005,-168.4
-2006,-239.8
-2007,-257.3
-2008,-199.8
-2009,-241.1
-2010,-374.1
-2011,-330.2
-2012,-425.4
-2013,-100.2
-2014,-182.2
-2015,-213.2
-2016,-255.5
-2017,-101.4
-2018,-73.0
-2019,-411.9
+# Year	Gt/yr
+1990	-138.7
+1991	-78.0
+1992	86.5
+1993	-91.2
+1994	-113.8
+1995	-212.3
+1996	131.9
+1997	7.2
+1998	-242.0
+1999	-47.1
+2000	-77.2
+2001	-26.0
+2002	-142.4
+2003	-167.3
+2004	-166.2
+2005	-168.4
+2006	-239.8
+2007	-257.3
+2008	-199.8
+2009	-241.1
+2010	-374.1
+2011	-330.2
+2012	-425.4
+2013	-100.2
+2014	-182.2
+2015	-213.2
+2016	-255.5
+2017	-101.4
+2018	-73.0
+2019	-411.9
 #+end_example
 
 * Antarctica
@@ -1100,9 +1102,10 @@ df = df['Total'].round(1)
 
 df.index = df.index.year
 f = open('AQ_FW.csv', 'w')
-f.write('# Contact: ken.mankoff@nasa.gov\n')
+f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
 f.write('# See https://github.com/NASA-GISS/freshwater-anomaly\n')
-df.to_csv(f, header=False)
+f.write('# Year\tGt/yr\n')
+df.to_csv(f, header=False, sep='\t')
 f.close()
 #+END_SRC
 
@@ -1115,38 +1118,39 @@ cat AQ_FW.csv
 
 #+RESULTS:
 #+begin_example
-# Contact: ken.mankoff@nasa.gov
+# Contact: Ken Mankoff <ken.mankoff@nasa.gov>
 # See https://github.com/NASA-GISS/freshwater-anomaly
-1990,-349.4
-1991,-349.4
-1992,-349.4
-1993,-349.4
-1994,-248.3
-1995,-358.5
-1996,-441.4
-1997,-595.8
-1998,-783.6
-1999,-1283.5
-2000,-1711.7
-2001,-2142.1
-2002,-2419.0
-2003,-2843.6
-2004,-3331.8
-2005,-3785.5
-2006,-4332.6
-2007,-5012.1
-2008,-5612.7
-2009,-6147.5
-2010,-6732.8
-2011,-7149.4
-2012,-7593.2
-2013,-8092.8
-2014,-8549.7
-2015,-8931.0
-2016,-9088.2
-2017,-8856.3
-2018,-8856.3
-2019,-8856.3
+# Year	Gt/yr
+1990	-349.4
+1991	-349.4
+1992	-349.4
+1993	-349.4
+1994	-248.3
+1995	-358.5
+1996	-441.4
+1997	-595.8
+1998	-783.6
+1999	-1283.5
+2000	-1711.7
+2001	-2142.1
+2002	-2419.0
+2003	-2843.6
+2004	-3331.8
+2005	-3785.5
+2006	-4332.6
+2007	-5012.1
+2008	-5612.7
+2009	-6147.5
+2010	-6732.8
+2011	-7149.4
+2012	-7593.2
+2013	-8092.8
+2014	-8549.7
+2015	-8931.0
+2016	-9088.2
+2017	-8856.3
+2018	-8856.3
+2019	-8856.3
 #+end_example
 
 
