@@ -786,6 +786,8 @@ df = df.loc['1990-01-01':'2019-12-31']\
     .round(1)\
     ['MB']
 
+df = df * -1 # Model expects positive values for mass loss
+
 df.index = df.index.year
 
 f = open('GL_FW.csv', 'w')
@@ -808,36 +810,36 @@ cat GL_FW.csv
 # Contact: Ken Mankoff <ken.mankoff@nasa.gov>
 # See https://github.com/NASA-GISS/freshwater-anomaly
 # Year	Gt/yr
-1990	-138.7
-1991	-78.0
-1992	86.5
-1993	-91.2
-1994	-113.8
-1995	-212.3
-1996	131.9
-1997	7.2
-1998	-242.0
-1999	-47.1
-2000	-77.2
-2001	-26.0
-2002	-142.4
-2003	-167.3
-2004	-166.2
-2005	-168.4
-2006	-239.8
-2007	-257.3
-2008	-199.8
-2009	-241.1
-2010	-374.1
-2011	-330.2
-2012	-425.4
-2013	-100.2
-2014	-182.2
-2015	-213.2
-2016	-255.5
-2017	-101.4
-2018	-73.0
-2019	-411.9
+1990	138.7
+1991	78.0
+1992	-86.5
+1993	91.2
+1994	113.8
+1995	212.3
+1996	-131.9
+1997	-7.2
+1998	242.0
+1999	47.1
+2000	77.2
+2001	26.0
+2002	142.4
+2003	167.3
+2004	166.2
+2005	168.4
+2006	239.8
+2007	257.3
+2008	199.8
+2009	241.1
+2010	374.1
+2011	330.2
+2012	425.4
+2013	100.2
+2014	182.2
+2015	213.2
+2016	255.5
+2017	101.4
+2018	73.0
+2019	411.9
 #+end_example
 
 * Antarctica
@@ -1084,6 +1086,7 @@ kw = {'left_index':True, 'right_index':True, 'how':'outer'}
 df = shelf_calving.merge(shelf_thinning, **kw).merge(AQ, **kw)
 df.index.name = 'Date'
 
+df = df.diff()
 df['Total'] = df[['Antarctica','Ice Shelf Calving','Ice Shelf Thinning']].sum(axis='columns')
 df.index.freq = 'AS'
 
@@ -1094,11 +1097,13 @@ df = pd.DataFrame(data=df,
                       periods=len(df.index) + 7,
                       freq=df.index.freq))
 
-df.iloc[:4] = df.iloc[4:7].mean()
-df.iloc[:4] = df.iloc[4:7].mean()
+# df = df.bfill()
+df.iloc[:5] = df.iloc[5:8].mean()
 df.iloc[-3:] = df.iloc[-6:-3].mean()
 
 df = df['Total'].round(1)
+
+df = df * -1 # Model expects positive values for mass loss
 
 df.index = df.index.year
 f = open('AQ_FW.csv', 'w')
@@ -1121,39 +1126,37 @@ cat AQ_FW.csv
 # Contact: Ken Mankoff <ken.mankoff@nasa.gov>
 # See https://github.com/NASA-GISS/freshwater-anomaly
 # Year	Gt/yr
-1990	-349.4
-1991	-349.4
-1992	-349.4
-1993	-349.4
-1994	-248.3
-1995	-358.5
-1996	-441.4
-1997	-595.8
-1998	-783.6
-1999	-1283.5
-2000	-1711.7
-2001	-2142.1
-2002	-2419.0
-2003	-2843.6
-2004	-3331.8
-2005	-3785.5
-2006	-4332.6
-2007	-5012.1
-2008	-5612.7
-2009	-6147.5
-2010	-6732.8
-2011	-7149.4
-2012	-7593.2
-2013	-8092.8
-2014	-8549.7
-2015	-8931.0
-2016	-9088.2
-2017	-8856.3
-2018	-8856.3
-2019	-8856.3
+1990	115.8
+1991	115.8
+1992	115.8
+1993	115.8
+1994	115.8
+1995	110.2
+1996	82.9
+1997	154.4
+1998	187.8
+1999	499.9
+2000	428.1
+2001	430.4
+2002	276.9
+2003	424.6
+2004	488.2
+2005	453.6
+2006	547.1
+2007	679.5
+2008	600.6
+2009	534.7
+2010	585.4
+2011	416.6
+2012	443.8
+2013	499.6
+2014	456.9
+2015	381.3
+2016	157.2
+2017	331.8
+2018	331.8
+2019	331.8
 #+end_example
-
-
 
 * Freshwater distribution mask
 ** Introduction
@@ -1456,7 +1459,7 @@ r.mapcalc "ocean_aq = if((distance_aq > 0) & (distance_aq < 500000) & isnull(bou
 r.out.gdal format=netCDF input=ocean_aq output=tmp/ocean_aq.nc
 #+END_SRC
 
-*** Build Greenland mask with scaled distribution       :noexport:
+*** Build mask with scaled distribution                 :noexport:
 
 + See slides above for [[id:20230127T114208][Greenland mass loss by ROI [%]​]]
 
@@ -1543,35 +1546,42 @@ ds.attrs['source'] = 'https://github.com/NASA-GISS/freshwater-anomaly'
 ds.to_netcdf('./dat/fw.nc')
 
 # current resolution: 1/8
-ds_coarse = ds.drop('ROI').coarsen(lat=int(2/(1/8))).median().coarsen(lon=int(2.5/(1/8))).median()
-ds_coarse['ROI'] = ds['ROI'].sel({'lat':ds_coarse['lat'],'lon':ds_coarse['lon']}, method='nearest')
-ds_coarse['ones'] = ds_coarse['ones'].round() # Median doesn't seem to work. Xarray bug?
-ds_coarse = ds_coarse.rename({'ones':'mask'})
-ds_coarse.to_netcdf('./dat/fw_144x90.nc')
+
+latbins = np.arange(-90,90+1)
+lonbins = np.arange(-180+0.625, 180+0.625*2, 1.25)
+ds2 = ds.groupby_bins('lat', latbins, labels=latbins[:-1]+0.5)\
+        .median()\
+        .groupby_bins('lon', lonbins, labels=lonbins[:-1])\
+        .median()\
+        .rename_dims({'lat_bins':'lat','lon_bins':'lon'})\
+        .rename({'lat_bins':'lat','lon_bins':'lon'})
+ds2 = ds2.rename({'ones':'mask'})
+ds2.to_netcdf('./dat/fw_288x180.nc', format='NETCDF3_CLASSIC')
+
+print(ds2.lon)
 
 # Trickier: non-uniform lat bins
 # ds['ones'].coarsen(lat=int(4/(1/8))).mean().coarsen(lon=int(5/(1/8))).mean().to_netcdf('./dat/fw_4x5.nc')
-print(ds)
+print(ds2)
 #+END_SRC
 
 #+RESULTS:
 #+begin_example
-<xarray.Dataset>
-Dimensions:      (lat: 1440, lon: 2880)
+<xarray.DataArray 'lon' (lon: 288)>
+array([-179.375, -178.125, -176.875, ...,  176.875,  178.125,  179.375])
 Coordinates:
-  ,* lat          (lat) float64 -89.94 -89.81 -89.69 -89.56 ... 89.69 89.81 89.94
-  ,* lon          (lon) float64 -179.9 -179.8 -179.7 -179.6 ... 179.7 179.8 179.9
+  ,* lon      (lon) float64 -179.4 -178.1 -176.9 -175.6 ... 176.9 178.1 179.4
+<xarray.Dataset>
+Dimensions:      (lon: 288, lat: 180)
+Coordinates:
+  ,* lon          (lon) float64 -179.4 -178.1 -176.9 -175.6 ... 176.9 178.1 179.4
+  ,* lat          (lat) float64 -89.5 -88.5 -87.5 -86.5 ... 86.5 87.5 88.5 89.5
 Data variables:
-    crs          bool True
-    ROI          (lat, lon) <U2 '' '' '' '' '' '' '' '' ... '' '' '' '' '' '' ''
-    ones         (lat, lon) int32 0 0 0 0 0 0 0 0 0 0 0 ... 0 0 0 0 0 0 0 0 0 0
-    anom         (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
-    anom_solid   (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
-    anom_liquid  (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
-Attributes:
-    Creator:  Ken Mankoff
-    email:    ken.mankoff@nasa.gov
-    source:   https://github.com/NASA-GISS/freshwater-anomaly
+    crs          (lon, lat) float64 1.0 1.0 1.0 1.0 1.0 ... 1.0 1.0 1.0 1.0 1.0
+    mask         (lon, lat) float64 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    anom         (lon, lat) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    anom_solid   (lon, lat) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    anom_liquid  (lon, lat) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
 #+end_example
 
 *** NOT USED                                            :noexport:
