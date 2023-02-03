@@ -1554,11 +1554,10 @@ ds2 = ds.groupby_bins('lat', latbins, labels=latbins[:-1]+0.5)\
         .groupby_bins('lon', lonbins, labels=lonbins[:-1])\
         .median()\
         .rename_dims({'lat_bins':'lat','lon_bins':'lon'})\
-        .rename({'lat_bins':'lat','lon_bins':'lon'})
+        .rename({'lat_bins':'lat','lon_bins':'lon'})\
+        .transpose() # Model expects variables to be (lat,lon)
 ds2 = ds2.rename({'ones':'mask'})
 ds2.to_netcdf('./dat/fw_288x180.nc', format='NETCDF3_CLASSIC')
-
-print(ds2.lon)
 
 # Trickier: non-uniform lat bins
 # ds['ones'].coarsen(lat=int(4/(1/8))).mean().coarsen(lon=int(5/(1/8))).mean().to_netcdf('./dat/fw_4x5.nc')
@@ -1567,21 +1566,17 @@ print(ds2)
 
 #+RESULTS:
 #+begin_example
-<xarray.DataArray 'lon' (lon: 288)>
-array([-179.375, -178.125, -176.875, ...,  176.875,  178.125,  179.375])
-Coordinates:
-  ,* lon      (lon) float64 -179.4 -178.1 -176.9 -175.6 ... 176.9 178.1 179.4
 <xarray.Dataset>
 Dimensions:      (lon: 288, lat: 180)
 Coordinates:
   ,* lon          (lon) float64 -179.4 -178.1 -176.9 -175.6 ... 176.9 178.1 179.4
   ,* lat          (lat) float64 -89.5 -88.5 -87.5 -86.5 ... 86.5 87.5 88.5 89.5
 Data variables:
-    crs          (lon, lat) float64 1.0 1.0 1.0 1.0 1.0 ... 1.0 1.0 1.0 1.0 1.0
-    mask         (lon, lat) float64 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
-    anom         (lon, lat) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
-    anom_solid   (lon, lat) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
-    anom_liquid  (lon, lat) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    crs          (lat, lon) float64 1.0 1.0 1.0 1.0 1.0 ... 1.0 1.0 1.0 1.0 1.0
+    mask         (lat, lon) float64 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    anom         (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    anom_solid   (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    anom_liquid  (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
 #+end_example
 
 *** NOT USED                                            :noexport:
