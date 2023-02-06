@@ -47,6 +47,7 @@
   - [[#stream-discharge-anomaly--anom---basebase][Stream discharge: anomaly[(anom - base)/base]]]
   - [[#summary-1][Summary]]
   - [[#output][Output]]
+  - [[#output-only-positive-values][Output only positive values]]
 - [[#antarctica][Antarctica]]
   - [[#imbie-2018][IMBIE 2018]]
   - [[#imbie-2018-vs-slater-2021][IMBIE 2018 vs Slater 2021]]
@@ -819,6 +820,81 @@ cat GL_FW.csv
 1996	-131.9
 1997	-7.2
 1998	242.0
+1999	47.1
+2000	77.2
+2001	26.0
+2002	142.4
+2003	167.3
+2004	166.2
+2005	168.4
+2006	239.8
+2007	257.3
+2008	199.8
+2009	241.1
+2010	374.1
+2011	330.2
+2012	425.4
+2013	100.2
+2014	182.2
+2015	213.2
+2016	255.5
+2017	101.4
+2018	73.0
+2019	411.9
+#+end_example
+
+** Output only positive values
+
+#+BEGIN_SRC jupyter-python :exports both
+import pandas as pd
+df = pd.read_csv('~/data/Mankoff_2021/448/MB_SMB_D_BMB.csv',
+                 parse_dates = True,
+                 index_col = 0)
+
+df = df.loc['1990-01-01':'2019-12-31']\
+    .resample('YS')\
+    .sum()\
+    .round(1)\
+    ['MB']
+
+df = df * -1 # Model expects positive values for mass loss
+
+for i,ii in enumerate(df.index):
+    if df.iloc[i] < 0:
+        df.iloc[i+1] += df.iloc[i]
+        df.iloc[i] = 0
+
+df.index = df.index.year
+
+f = open('GL_FW_pos.csv', 'w')
+f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
+f.write('# See https://github.com/NASA-GISS/freshwater-anomaly\n')
+f.write('# Year\tGt/yr\n')
+df.to_csv(f, header=False, sep='\t')
+f.close()
+#+END_SRC
+
+#+RESULTS:
+
+#+BEGIN_SRC bash :results verbatim
+cat GL_FW_pos.csv
+#+END_SRC
+
+
+#+RESULTS:
+#+begin_example
+# Contact: Ken Mankoff <ken.mankoff@nasa.gov>
+# See https://github.com/NASA-GISS/freshwater-anomaly
+# Year	Gt/yr
+1990	138.7
+1991	78.0
+1992	0.0
+1993	4.700000000000003
+1994	113.8
+1995	212.3
+1996	0.0
+1997	0.0
+1998	102.9
 1999	47.1
 2000	77.2
 2001	26.0
