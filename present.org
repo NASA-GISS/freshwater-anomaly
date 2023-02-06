@@ -159,8 +159,7 @@ print('2010-2019 (excl 2012 & 2019): ', dd.data, dd.data/-362)
 citet:slater_2021 provides global ice mass change. This includes *ice shelf mass loss*, something not detected by GRACE and excluded from most mass change products. We use citet:slater_2021 in Antarctica.
 
 + Paper: https://doi.org/10.5194/tc-15-233-2021
-+ Data: Shared via email (pers. comm.)
-  + To be updated with DOI
++ Data: https://doi.org/10.5281/zenodo.7612514
 
 {{{SKIPLINE}}}
 
