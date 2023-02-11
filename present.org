@@ -776,7 +776,7 @@ pct.round()
 
 #+BEGIN_SRC jupyter-python :exports both
 import pandas as pd
-df = pd.read_csv('~/data/Mankoff_2021/448/MB_SMB_D_BMB.csv',
+df = pd.read_csv('~/data/Mankoff_2021/461/MB_SMB_D_BMB.csv',
                  parse_dates = True,
                  index_col = 0)
 
@@ -790,9 +790,11 @@ df = df * -1 # Model expects positive values for mass loss
 
 df.index = df.index.year
 
-f = open('GL_FW.csv', 'w')
+f = open('out/mass_change_greenland.csv', 'w')
 f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
-f.write('# See https://github.com/NASA-GISS/freshwater-anomaly\n')
+f.write('# Code: https://github.com/NASA-GISS/freshwater-anomaly\n')
+f.write('# Data: Mankoff /et al./ (2021)\n')
+f.write('# Summary: Annual mass change from Greenland.\n')
 f.write('# Year\tGt/yr\n')
 df.to_csv(f, header=False, sep='\t')
 f.close()
@@ -801,52 +803,54 @@ f.close()
 #+RESULTS:
 
 #+BEGIN_SRC bash :results verbatim
-cat GL_FW.csv
+cat out/mass_change_greenland.csv
 #+END_SRC
 
 
 #+RESULTS:
 #+begin_example
 # Contact: Ken Mankoff <ken.mankoff@nasa.gov>
-# See https://github.com/NASA-GISS/freshwater-anomaly
+# Code: https://github.com/NASA-GISS/freshwater-anomaly
+# Data: Mankoff /et al./ (2021)
+# Summary: Annual mass change from Greenland.
 # Year	Gt/yr
-1990	138.7
-1991	78.0
-1992	-86.5
-1993	91.2
+1990	137.6
+1991	76.7
+1992	-87.1
+1993	90.7
 1994	113.8
-1995	212.3
-1996	-131.9
-1997	-7.2
-1998	242.0
-1999	47.1
-2000	77.2
-2001	26.0
-2002	142.4
-2003	167.3
-2004	166.2
+1995	211.9
+1996	-132.2
+1997	-7.6
+1998	241.8
+1999	47.0
+2000	77.1
+2001	26.1
+2002	142.5
+2003	167.2
+2004	165.8
 2005	168.4
 2006	239.8
 2007	257.3
-2008	199.8
-2009	241.1
-2010	374.1
-2011	330.2
-2012	425.4
-2013	100.2
-2014	182.2
-2015	213.2
-2016	255.5
-2017	101.4
-2018	73.0
-2019	411.9
+2008	201.2
+2009	243.0
+2010	376.8
+2011	336.2
+2012	429.3
+2013	107.9
+2014	184.6
+2015	213.9
+2016	256.0
+2017	102.6
+2018	75.8
+2019	426.0
 #+end_example
 
 ** Output only positive values
 
 #+BEGIN_SRC jupyter-python :exports both
 import pandas as pd
-df = pd.read_csv('~/data/Mankoff_2021/448/MB_SMB_D_BMB.csv',
+df = pd.read_csv('~/data/Mankoff_2021/461/MB_SMB_D_BMB.csv',
                  parse_dates = True,
                  index_col = 0)
 
@@ -864,10 +868,14 @@ for i,ii in enumerate(df.index):
         df.iloc[i] = 0
 
 df.index = df.index.year
+df = df.round(1)
 
-f = open('GL_FW_pos.csv', 'w')
+f = open('out/mass_change_no_gain_greenland.csv', 'w')
 f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
-f.write('# See https://github.com/NASA-GISS/freshwater-anomaly\n')
+f.write('# Code: https://github.com/NASA-GISS/freshwater-anomaly\n')
+f.write('# Data: Mankoff /et al./ (2021)\n')
+f.write('# Summary: Annual mass change from Greenland.\n')
+f.write('# Summary: Years with mass gain spread over following year(s) with loss so values always positive (mass loss).\n')
 f.write('# Year\tGt/yr\n')
 df.to_csv(f, header=False, sep='\t')
 f.close()
@@ -876,45 +884,48 @@ f.close()
 #+RESULTS:
 
 #+BEGIN_SRC bash :results verbatim
-cat GL_FW_pos.csv
+cat out/mass_change_no_gain_greenland.csv
 #+END_SRC
 
 
 #+RESULTS:
 #+begin_example
 # Contact: Ken Mankoff <ken.mankoff@nasa.gov>
-# See https://github.com/NASA-GISS/freshwater-anomaly
+# Code: https://github.com/NASA-GISS/freshwater-anomaly
+# Data: Mankoff /et al./ (2021)
+# Summary: Annual mass change from Greenland.
+# Summary: Years with mass gain spread over following year(s) with loss so values always positive (mass loss).
 # Year	Gt/yr
-1990	138.7
-1991	78.0
+1990	137.6
+1991	76.7
 1992	0.0
-1993	4.700000000000003
+1993	3.6
 1994	113.8
-1995	212.3
+1995	211.9
 1996	0.0
 1997	0.0
-1998	102.9
-1999	47.1
-2000	77.2
-2001	26.0
-2002	142.4
-2003	167.3
-2004	166.2
+1998	102.0
+1999	47.0
+2000	77.1
+2001	26.1
+2002	142.5
+2003	167.2
+2004	165.8
 2005	168.4
 2006	239.8
 2007	257.3
-2008	199.8
-2009	241.1
-2010	374.1
-2011	330.2
-2012	425.4
-2013	100.2
-2014	182.2
-2015	213.2
-2016	255.5
-2017	101.4
-2018	73.0
-2019	411.9
+2008	201.2
+2009	243.0
+2010	376.8
+2011	336.2
+2012	429.3
+2013	107.9
+2014	184.6
+2015	213.9
+2016	256.0
+2017	102.6
+2018	75.8
+2019	426.0
 #+end_example
 
 * Antarctica
@@ -1181,9 +1192,11 @@ df = df['Total'].round(1)
 df = df * -1 # Model expects positive values for mass loss
 
 df.index = df.index.year
-f = open('AQ_FW.csv', 'w')
+f = open('out/mass_change_antarctica.csv', 'w')
 f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
-f.write('# See https://github.com/NASA-GISS/freshwater-anomaly\n')
+f.write('# Code: https://github.com/NASA-GISS/freshwater-anomaly\n')
+f.write('# Data: Slater /et al./ (2021)\n')
+f.write('# Summary: Annual mass loss from Antarctica.\n')
 f.write('# Year\tGt/yr\n')
 df.to_csv(f, header=False, sep='\t')
 f.close()
@@ -1192,14 +1205,16 @@ f.close()
 #+RESULTS:
 
 #+BEGIN_SRC bash :results verbatim
-cat AQ_FW.csv
+cat out/mass_change_antarctica.csv
 #+END_SRC
 
 
 #+RESULTS:
 #+begin_example
 # Contact: Ken Mankoff <ken.mankoff@nasa.gov>
-# See https://github.com/NASA-GISS/freshwater-anomaly
+# Code: https://github.com/NASA-GISS/freshwater-anomaly
+# Data: Slater /et al./ (2021)
+# Summary: Annual mass loss from Antarctica.
 # Year	Gt/yr
 1990	115.8
 1991	115.8
@@ -1552,7 +1567,7 @@ ds['lat'].attrs['units'] = 'degrees_north'
 
 # record the RIO for each cell
 ROI = np.empty(ds['Band1'].data.shape, dtype='U2')
-b1 = ds['Band1'].values.astype(int)
+b1 = ds['Band1'].values
 ROI[b1 == 12] = 'NO' # cloc face
 ROI[b1 == 1] = 'NE'
 ROI[b1 == 3] = 'CE'
@@ -1618,7 +1633,7 @@ ds.attrs['Creator'] = 'Ken Mankoff'
 ds.attrs['email'] = 'ken.mankoff@nasa.gov'
 ds.attrs['source'] = 'https://github.com/NASA-GISS/freshwater-anomaly'
         
-ds.to_netcdf('./dat/fw.nc')
+ds.to_netcdf('./out/fw.nc')
 
 # current resolution: 1/8
 
@@ -1628,11 +1643,13 @@ ds2 = ds.groupby_bins('lat', latbins, labels=latbins[:-1]+0.5)\
         .median()\
         .groupby_bins('lon', lonbins, labels=lonbins[:-1])\
         .median()\
-        .rename_dims({'lat_bins':'lat','lon_bins':'lon'})\
         .rename({'lat_bins':'lat','lon_bins':'lon'})\
         .transpose() # Model expects variables to be (lat,lon)
 ds2 = ds2.rename({'ones':'mask'})
-ds2.to_netcdf('./dat/fw_288x180.nc', format='NETCDF3_CLASSIC')
+ds2['lon'].attrs['units'] = 'degrees_east'
+ds2['lat'].attrs['units'] = 'degrees_north'
+ds2.to_netcdf('./out/fw_288x180.nc', format='NETCDF3_CLASSIC')
+
 
 # Trickier: non-uniform lat bins
 # ds['ones'].coarsen(lat=int(4/(1/8))).mean().coarsen(lon=int(5/(1/8))).mean().to_netcdf('./dat/fw_4x5.nc')
@@ -1644,14 +1661,18 @@ print(ds2)
 <xarray.Dataset>
 Dimensions:      (lon: 288, lat: 180)
 Coordinates:
-  ,* lon          (lon) float64 -179.4 -178.1 -176.9 -175.6 ... 176.9 178.1 179.4
   ,* lat          (lat) float64 -89.5 -88.5 -87.5 -86.5 ... 86.5 87.5 88.5 89.5
+  ,* lon          (lon) float64 -179.4 -178.1 -176.9 -175.6 ... 176.9 178.1 179.4
 Data variables:
     crs          (lat, lon) float64 1.0 1.0 1.0 1.0 1.0 ... 1.0 1.0 1.0 1.0 1.0
     mask         (lat, lon) float64 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
     anom         (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
     anom_solid   (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
     anom_liquid  (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+Attributes:
+    Creator:  Ken Mankoff
+    email:    ken.mankoff@nasa.gov
+    source:   https://github.com/NASA-GISS/freshwater-anomaly
 #+end_example
 
 *** NOT USED                                            :noexport:
@@ -1749,7 +1770,7 @@ See https://nsidc.org/data/nsidc-0709
 [[./fig/panoply_fw.nc.png]]
 
 #+BEGIN_SRC bash :exports none :results verbatim
-ncdump dat/fw.nc | head -n40
+ncdump out/fw.nc | head -n40
 echo "[...]"
 #+END_SRC
 
@@ -1804,7 +1825,7 @@ variables:
 
 #+BEGIN_SRC jupyter-python :results verbatim :exports results
 import xarray as xr
-ds = xr.open_dataset('./dat/fw.nc')
+ds = xr.open_dataset('./out/fw.nc')
 _ = (ds['anom']).sel({'lat':slice(50,90),'lon':slice(-90,0)}).plot()
 # _ = (1E2*ds['anom_liquid']).plot()
 # _ = (1E2*ds['anom_solid']).plot()
@@ -1812,19 +1833,19 @@ _ = (ds['anom']).sel({'lat':slice(50,90),'lon':slice(-90,0)}).plot()
 
 #+ATTR_LATEX: :height 0.9\textheight
 #+RESULTS:
-[[file:./.ob-jupyter/0c5e574a5639bd4ead38ebfe27bfc7ca2a1e11d0.png]]
+[[file:./.ob-jupyter/04adf306af466580479853e74b920e0d45dbc623.png]]
 
 ** New mask visualization (Antarctica)
 
 #+BEGIN_SRC jupyter-python :results verbatim :exports results
 import xarray as xr
-ds = xr.open_dataset('./dat/fw.nc')
+ds = xr.open_dataset('./out/fw.nc')
 _ = (ds['anom']).sel({'lat':slice(-90,-40)}).plot()
 #+END_SRC
 
 #+ATTR_LATEX: :height 0.9\textheight
 #+RESULTS:
-[[file:./.ob-jupyter/e92b8fc82643214c6a7a99d6755b6205163c70af.png]]
+[[file:./.ob-jupyter/f6294105a78024b0fca36d4b9a3369064688cc88.png]]
 
 * Summary
 ** Questions & To Do                                    :noexport:
