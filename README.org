@@ -1,5 +1,11 @@
 * Table of contents                               :toc_2:noexport:
 - [[#introduction][Introduction]]
+- [[#info][Info]]
+- [[#data][Data]]
+  - [[#antarctica][Antarctica]]
+  - [[#greenland][Greenland]]
+- [[#mask][Mask]]
+  - [[#288x180][288x180]]
 
 * Introduction
 
@@ -10,4 +16,115 @@ Generate freshwater anomaly data files and distribution mask for ModelE
 
 See [[./present.org]] for a digital workbook.
 
+* Info
 
++ Contact: Ken Mankoff <ken.mankoff@nasa.gov>
++ Code: https://github.com/NASA-GISS/freshwater-anomaly
++ Data: Mankoff /et al./ (2021) and Slater /et al./ (2021)
+
+* Data
+
+** Antarctica
+
+#+BEGIN_SRC bash :results verbatim :exports both
+head out/mass_change_antarctica.csv
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+# Contact: Ken Mankoff <ken.mankoff@nasa.gov>
+# Code: https://github.com/NASA-GISS/freshwater-anomaly
+# Data: Slater /et al./ (2021)
+# Summary: Annual mass loss from Antarctica.
+# Year	Gt/yr
+1990	115.8
+1991	115.8
+1992	115.8
+1993	115.8
+1994	115.8
+#+end_example
+
+Note: Time series extended back and forward from data range to 1990-2019 using average of first or last three years of data.
+
+** Greenland
+
+#+BEGIN_SRC bash :results verbatim :exports both
+head out/mass_change_greenland.csv
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+# Contact: Ken Mankoff <ken.mankoff@nasa.gov>
+# Code: https://github.com/NASA-GISS/freshwater-anomaly
+# Data: Mankoff /et al./ (2021)
+# Summary: Annual mass change from Greenland.
+# Year	Gt/yr
+1990	137.6
+1991	76.7
+1992	-87.1
+1993	90.7
+1994	113.8
+#+end_example
+
+Note: =mass_change_no_gain_greenland.csv= is same as =mass_change_greenland.csv=, but years with mass gain spread over following year(s) with loss so values always positive (mass loss).
+
+* Mask
+
+** 288x180
+
++ 1/8th degree distribution mask
++ Greenland: 100 km
++ Antarctica: 250 km
++ =mask= is 1 in each cell
++ =anom= is weighted by total anomaly per region
++ =anom_solid= is weighted by solid discharge anomaly per region
++ =anom_liquid= is weighted by liquid runoff anomaly per region
+
+#+BEGIN_SRC bash :results verbatim :exports both
+ncdump -chs out/fw_288x180.nc
+#+END_SRC
+
+#+RESULTS:
+#+begin_example
+netcdf fw_288x180 {
+dimensions:
+	lat = 180 ;
+	lon = 288 ;
+variables:
+	double crs(lat, lon) ;
+		crs:_FillValue = NaN ;
+		crs:grid_mapping_name = "latitude_longitude" ;
+		crs:grid_mapping = "crs" ;
+	double mask(lat, lon) ;
+		mask:_FillValue = 0. ;
+		mask:description = "Grid cells with freshwater runoff, submarine melt, or iceberg forcing" ;
+		mask:grid_mapping = "crs" ;
+	float anom(lat, lon) ;
+		anom:_FillValue = 0.f ;
+		anom:description = "Anomaly freshwater runoff, submarine melt, or iceberg forcing, scaled by sector contribution" ;
+		anom:distribution_pct = "{\'CE\': 1, \'CW\': 24, \'NO\': 12, \'NE\': 17, \'NW\': 29, \'SE\': 5, \'SW\': 11}" ;
+		anom:grid_mapping = "crs" ;
+	float anom_solid(lat, lon) ;
+		anom_solid:_FillValue = 0.f ;
+		anom_solid:description = "Anomaly iceberg forcing, scaled by sector contribution" ;
+		anom_solid:distribution_pct = "{\'CE\': 16, \'CW\': 17, \'NO\': 5, \'NE\': 5, \'NW\': 21, \'SE\': 31, \'SW\': 4}" ;
+		anom_solid:grid_mapping = "crs" ;
+	float anom_liquid(lat, lon) ;
+		anom_liquid:_FillValue = 0.f ;
+		anom_liquid:description = "Anomaly freshwater runoff and submarine melt scaled by sector contribution" ;
+		anom_liquid:distribution_pct = "{\'CE\': 13, \'CW\': 10, \'NO\': 11, \'NE\': 9, \'NW\': 12, \'SE\': 17, \'SW\': 27}" ;
+		anom_liquid:grid_mapping = "crs" ;
+	double lat(lat) ;
+		lat:_FillValue = NaN ;
+		lat:units = "degrees_north" ;
+	double lon(lon) ;
+		lon:_FillValue = NaN ;
+		lon:units = "degrees_east" ;
+
+// global attributes:
+		:Creator = "Ken Mankoff" ;
+		:email = "ken.mankoff@nasa.gov" ;
+		:source = "https://github.com/NASA-GISS/freshwater-anomaly" ;
+		:_Format = "classic" ;
+}
+#+end_example
