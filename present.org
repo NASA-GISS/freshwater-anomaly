@@ -864,85 +864,91 @@ cat out/mass_change_greenland.csv
 
 ** Output only positive values
 
-#+BEGIN_SRC jupyter-python :exports none
-import pandas as pd
-df = pd.read_csv('~/data/Mankoff_2021/461/MB_SMB_D_BMB.csv',
-                 parse_dates = True,
-                 index_col = 0)
+# Use NetCDF that contains uncertainty.
 
-df = df.loc['1990-01-01':'2019-12-31']\
-    .resample('YS')\
-    .sum()\
-    .round(1)\
-    ['MB']
+#+BEGIN_SRC jupyter-python :exports results
+import xarray as xr
+ds = xr.open_dataset('~/data/Mankoff_2021/461/MB_region.nc')\
+    [['MB','MB_err']]\
+    .sel(time=slice('1990-01-01','2019-12-31'))\
+    .resample({'time':'YS'})\
+    .sum()
 
-df = df * -1 # Model expects positive values for mass loss
+df = ds.to_dataframe()
+
+df['MB'] = -1 * df['MB'] # Model expects positive values for mass loss
+df['MB_hi'] = (df['MB'] + df['MB_err'])
+df['MB_lo'] = (df['MB'] - df['MB_err'])
 
 for i,ii in enumerate(df.index):
-    if df.iloc[i] < 0:
-        df.iloc[i+1] += df.iloc[i]
-        df.iloc[i] = 0
+    for mb in ['MB','MB_hi','MB_lo']:
+        if df[mb].iloc[i] < 0:
+            df[mb].iloc[i+1] += df[mb].iloc[i]
+            df[mb].iloc[i] = 0
 
 df.index = df.index.year
 df = df.round(1)
 
-f = open('out/mass_change_no_gain_greenland.csv', 'w')
-f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
-f.write('# Code: https://github.com/NASA-GISS/freshwater-anomaly\n')
-f.write('# Data: Mankoff /et al./ (2021)\n')
-f.write('# Summary: Annual mass change from Greenland.\n')
-f.write('# Summary: Years with mass gain spread over following year(s) with loss so values always positive (mass loss).\n')
-f.write('# Year\tGt/yr\n')
-df.to_csv(f, header=False, sep='\t')
-f.close()
+f_mid = open('out/mass_change_no_gain_greenland.csv', 'w')
+f_hi = open('out/mass_change_no_gain_greenland_hi.csv', 'w')
+f_lo= open('out/mass_change_no_gain_greenland_lo.csv', 'w')
+
+for f in [f_mid,f_hi,f_lo]:
+    f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
+    f.write('# Code: https://github.com/NASA-GISS/freshwater-anomaly\n')
+    f.write('# Data: Mankoff /et al./ (2021)\n')
+    f.write('# Summary: Annual mass change from Greenland')
+    if f == f_hi: f.write(' (high estimate)')
+    if f == f_lo: f.write(' (low estimate)')
+    f.write(".\n")
+    f.write('# Summary: Years with mass gain spread over following year(s) with loss so values always positive (mass loss).\n')
+    f.write('# Year\tGt/yr\n')
+
+df['MB'].to_csv(f_mid, header=False, sep='\t')
+df['MB_hi'].to_csv(f_hi, header=False, sep='\t')
+df['MB_lo'].to_csv(f_lo, header=False, sep='\t')
+
+for f in [f_mid,f_hi,f_lo]:
+    f.close()
+
+df.loc['TOTAL'] = df.sum()    
+df[['MB_lo','MB','MB_hi','MB_err']]
 #+END_SRC
 
 #+RESULTS:
-
-#+BEGIN_SRC bash :results verbatim :exports results
-cat out/mass_change_no_gain_greenland.csv
-#+END_SRC
-
-
-#+RESULTS:
-#+begin_example
-# Contact: Ken Mankoff <ken.mankoff@nasa.gov>
-# Code: https://github.com/NASA-GISS/freshwater-anomaly
-# Data: Mankoff /et al./ (2021)
-# Summary: Annual mass change from Greenland.
-# Summary: Years with mass gain spread over following year(s) with loss so values always positive (mass loss).
-# Year	Gt/yr
-1990	137.6
-1991	76.7
-1992	0.0
-1993	3.6
-1994	113.8
-1995	211.9
-1996	0.0
-1997	0.0
-1998	102.0
-1999	47.0
-2000	77.1
-2001	26.1
-2002	142.5
-2003	167.2
-2004	165.8
-2005	168.4
-2006	239.8
-2007	257.3
-2008	201.2
-2009	243.0
-2010	376.8
-2011	336.2
-2012	429.3
-2013	107.9
-2014	184.6
-2015	213.9
-2016	256.0
-2017	102.6
-2018	75.8
-2019	426.0
-#+end_example
+|  time |  MB_lo |     MB |  MB_hi | MB_err |
+|-------+--------+--------+--------+--------|
+|  1990 |   53.6 |  137.6 |  221.6 |     84 |
+|  1991 |      0 |   76.7 |  164.7 |   87.9 |
+|  1992 |      0 |      0 |      0 |   77.6 |
+|  1993 |      0 |    3.6 |    167 |   85.8 |
+|  1994 |      0 |  113.8 |  187.2 |   73.4 |
+|  1995 |    4.8 |  211.9 |  288.5 |   76.5 |
+|  1996 |      0 |      0 |      0 |   84.3 |
+|  1997 |      0 |      0 |     25 |   80.5 |
+|  1998 |      0 |    102 |  323.6 |   81.9 |
+|  1999 |      0 |     47 |  132.3 |   85.3 |
+|  2000 |      0 |   77.1 |  154.9 |   77.8 |
+|  2001 |      0 |   26.1 |    111 |   84.9 |
+|  2002 |      0 |  142.5 |  225.7 |   83.2 |
+|  2003 |      0 |  167.2 |  261.9 |   94.7 |
+|  2004 |      0 |  165.8 |  249.6 |   83.8 |
+|  2005 |   44.9 |  168.4 |  263.4 |     95 |
+|  2006 |  163.1 |  239.8 |  316.5 |   76.7 |
+|  2007 |  161.9 |  257.3 |  352.7 |   95.4 |
+|  2008 |    104 |  201.2 |  298.4 |   97.2 |
+|  2009 |  157.7 |    243 |  328.3 |   85.3 |
+|  2010 |  283.2 |  376.8 |  470.3 |   93.6 |
+|  2011 |  242.2 |  336.2 |  430.3 |   94.1 |
+|  2012 |  319.5 |  429.3 |  539.2 |  109.8 |
+|  2013 |   19.4 |  107.9 |  196.4 |   88.5 |
+|  2014 |     91 |  184.6 |  278.3 |   93.7 |
+|  2015 |  118.5 |  213.9 |  309.3 |   95.4 |
+|  2016 |  154.2 |    256 |  357.8 |  101.8 |
+|  2017 |   11.7 |  102.6 |  193.4 |   90.9 |
+|  2018 |      0 |   75.8 |  158.4 |   82.6 |
+|  2019 |  319.5 |    426 |  525.7 |   99.7 |
+| TOTAL | 2249.2 | 4890.1 | 7531.4 | 2641.3 |
 
 * Antarctica
 ** IMBIE 2018
