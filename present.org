@@ -1007,6 +1007,7 @@ imbie = imbie.resample('YS').mean()
 <<load_slater_2021>>
 kw = {'left_index':True, 'right_index':True, 'how':'outer'}
 S2021 = shelf_calving.merge(shelf_thinning, **kw).merge(AQ, **kw)
+S2021 = S2021.rename(columns={"Antarctica":"Grounded Ice"})
 
 df = imbie.merge(S2021, left_index=True, right_index=True, how='outer')
 df.index.name = 'Date'
@@ -1019,24 +1020,17 @@ for _ in df.columns: # extend by 1 year for plotting w/ 'step'
 fig, (ax, ax2) = plt.subplots(nrows=2, figsize=(4,6), sharex=True)
 
 kw = {'drawstyle':'steps'}
-(df['Antarctica']).plot(ax=ax, **kw)
+(df['Grounded Ice']).plot(ax=ax, **kw)
 (df['IMBIE']).plot(ax=ax, **kw)
 ax.set_ylabel('Annual\nmass change [Gt]')
-(df['IMBIE'] - df['Antarctica']).plot(ax=ax, linestyle='--', color='k', alpha=0.5, **kw)
+(df['IMBIE'] - df['Grounded Ice']).plot(ax=ax, linestyle='--', color='k', alpha=0.5, **kw)
+ax.legend(loc='lower left')
 
-# df[['Antarctica','IMBIE']]\
-#     .rename(columns={'Antarctica':'Slater 2021 (AQ)'})\
-#     .plot(ax=ax2, **kw)
-# _ = ax2.set_ylabel('Cumulative\nmass change [Gt]')
-# ax2r = ax2.twinx()
-# ax2r.set_ylim(np.array(ax2.get_ylim()).astype(float)/-362)
-# ax2r.set_ylabel('SLR [mm]')
+xlim = ax.get_xlim()
 
-# xlim = ax2.get_xlim()
-
-df['Total'] = df[['Antarctica','Ice Shelf Calving','Ice Shelf Thinning']].sum(axis='columns')
+df['Total'] = df[['Grounded Ice','Ice Shelf Calving','Ice Shelf Thinning']].sum(axis='columns')
 df['Ice Shelf (Combined)'] = df[['Ice Shelf Calving','Ice Shelf Thinning']].sum(axis='columns')
-df[['Antarctica',
+df[['Grounded Ice',
     'Ice Shelf Calving',
     'Ice Shelf Thinning',
     'Ice Shelf (Combined)',
@@ -1046,8 +1040,8 @@ df[['Antarctica',
     .plot(ax=ax2, **kw)
 plt.legend(loc='lower right', bbox_to_anchor=(1.1,0))
 plt.rcParams.update({'legend.fontsize':6})
-_ = ax3.set_ylabel('Cumulative\nfreshwater mass [Gt]')
-_ = ax3.set_xlim(xlim)
+# _ = ax2.set_ylabel('Cumulative\nfreshwater mass [Gt]')
+_ = ax.set_xlim(xlim)
 #+END_SRC
 
 #+ATTR_LATEX: :height 0.85\textheight
