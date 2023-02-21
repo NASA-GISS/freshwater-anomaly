@@ -1001,29 +1001,31 @@ S2021.index.name = 'Date'
 df = imbie.merge(S2021, left_index=True, right_index=True, how='outer')
 df.index.name = 'Date'
 
+df = df.diff() # not cumulative
+
 for _ in df.columns: # extend by 1 year for plotting w/ 'step'
     df.loc[df[_].dropna().index[-1] + pd.offsets.DateOffset(years=1),_] = df[_].dropna().iloc[-1]
 
-fig, (ax, ax2, ax3) = plt.subplots(nrows=3, figsize=(4,7), sharex=True)
+fig, (ax, ax2) = plt.subplots(nrows=2, figsize=(4,6), sharex=True)
+
 kw = {'drawstyle':'steps'}
-(df['Antarctica']).diff().plot(ax=ax, **kw)
-(df['IMBIE']).diff().plot(ax=ax, **kw)
+(df['Antarctica']).plot(ax=ax, **kw)
+(df['IMBIE']).plot(ax=ax, **kw)
 ax.set_ylabel('Annual\nmass change [Gt]')
-(df['IMBIE'] - df['Antarctica']).diff().plot(ax=ax, linestyle='--', color='k', alpha=0.5, **kw)
+(df['IMBIE'] - df['Antarctica']).plot(ax=ax, linestyle='--', color='k', alpha=0.5, **kw)
 
-df[['Antarctica','IMBIE']]\
-    .rename(columns={'Antarctica':'Slater 2021 (AQ)'})\
-    .plot(ax=ax2, **kw)
-_ = ax2.set_ylabel('Cumulative\nmass change [Gt]')
-ax2r = ax2.twinx()
-ax2r.set_ylim(np.array(ax2.get_ylim()).astype(float)/-362)
-ax2r.set_ylabel('SLR [mm]')
+# df[['Antarctica','IMBIE']]\
+#     .rename(columns={'Antarctica':'Slater 2021 (AQ)'})\
+#     .plot(ax=ax2, **kw)
+# _ = ax2.set_ylabel('Cumulative\nmass change [Gt]')
+# ax2r = ax2.twinx()
+# ax2r.set_ylim(np.array(ax2.get_ylim()).astype(float)/-362)
+# ax2r.set_ylabel('SLR [mm]')
 
-xlim = ax2.get_xlim()
+# xlim = ax2.get_xlim()
 
 df['Total'] = df[['Antarctica','Ice Shelf Calving','Ice Shelf Thinning']].sum(axis='columns')
 df['Ice Shelf (Combined)'] = df[['Ice Shelf Calving','Ice Shelf Thinning']].sum(axis='columns')
-plt.rcParams.update({'legend.fontsize':8})
 df[['Antarctica',
     'Ice Shelf Calving',
     'Ice Shelf Thinning',
@@ -1031,7 +1033,9 @@ df[['Antarctica',
     'Total',
     ]]\
     .dropna()\
-    .plot(ax=ax3, **kw)
+    .plot(ax=ax2, **kw)
+plt.legend(loc='lower right', bbox_to_anchor=(1.1,0))
+plt.rcParams.update({'legend.fontsize':6})
 _ = ax3.set_ylabel('Cumulative\nfreshwater mass [Gt]')
 _ = ax3.set_xlim(xlim)
 #+END_SRC
