@@ -790,7 +790,7 @@ pct.round()
 
 ** Output
 
-#+BEGIN_SRC jupyter-python :exports both
+#+BEGIN_SRC jupyter-python :exports none
 import pandas as pd
 df = pd.read_csv('~/data/Mankoff_2021/461/MB_SMB_D_BMB.csv',
                  parse_dates = True,
@@ -818,7 +818,7 @@ f.close()
 
 #+RESULTS:
 
-#+BEGIN_SRC bash :results verbatim
+#+BEGIN_SRC bash :results verbatim :exports results
 cat out/mass_change_greenland.csv
 #+END_SRC
 
@@ -864,7 +864,7 @@ cat out/mass_change_greenland.csv
 
 ** Output only positive values
 
-#+BEGIN_SRC jupyter-python :exports both
+#+BEGIN_SRC jupyter-python :exports none
 import pandas as pd
 df = pd.read_csv('~/data/Mankoff_2021/461/MB_SMB_D_BMB.csv',
                  parse_dates = True,
@@ -899,7 +899,7 @@ f.close()
 
 #+RESULTS:
 
-#+BEGIN_SRC bash :results verbatim
+#+BEGIN_SRC bash :results verbatim :exports results
 cat out/mass_change_no_gain_greenland.csv
 #+END_SRC
 
@@ -1175,7 +1175,7 @@ From citet:rignot_2019
     
 ** Output
 
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC jupyter-python :exports none
 import pandas as pd
 
 <<load_slater_2021>>
@@ -1213,7 +1213,7 @@ f.close()
 
 #+RESULTS:
 
-#+BEGIN_SRC bash :results verbatim
+#+BEGIN_SRC bash :results verbatim :exports results
 cat out/mass_change_antarctica.csv
 #+END_SRC
 
