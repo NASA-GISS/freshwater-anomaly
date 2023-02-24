@@ -22,7 +22,7 @@
 # #+PROPERTY: header-args:jupyter-python :session MC-LOB :eval no-export :noweb yes :exports results :results raw drawer
 # #+PROPERTY: header-args:jupyter-python+ :var datadir="/home/kdm/projects/freshwater/freshwater/runoff/"
 
-* COMMENT Table of contents                       :toc_2:noexport:
+* Table of contents                       :toc_2:noexport:
 - [[#introduction][Introduction]]
   - [[#summary][Summary]]
   - [[#numbers-and-units][Numbers and units]]
@@ -47,7 +47,8 @@
   - [[#stream-discharge-anomaly--anom---basebase][Stream discharge: anomaly[(anom - base)/base]]]
   - [[#summary-1][Summary]]
   - [[#output][Output]]
-  - [[#output-only-positive-values][Output only positive values]]
+  - [[#output-only-positive-values-notes][Output only positive values: notes]]
+  - [[#output-only-positive-values-results][Output only positive values: results]]
 - [[#antarctica][Antarctica]]
   - [[#imbie-2018][IMBIE 2018]]
   - [[#imbie-2018-vs-slater-2021][IMBIE 2018 vs Slater 2021]]
@@ -56,7 +57,8 @@
   - [[#fw-forcing-distribution][FW forcing distribution]]
   - [[#aq-by-roi][AQ by ROI]]
   - [[#aq-by-roi-1][AQ by ROI]]
-  - [[#output-1][Output]]
+  - [[#output-notes][Output: notes]]
+  - [[#output-code][Output: code]]
 - [[#freshwater-distribution-mask][Freshwater distribution mask]]
   - [[#introduction-1][Introduction]]
   - [[#existing-mask][Existing mask]]
@@ -862,9 +864,14 @@ cat out/mass_change_greenland.csv
 2019	426.0
 #+end_example
 
-** Output only positive values
+** Output only positive values: notes
 
-# Use NetCDF that contains uncertainty.
++ Use uncertainty from citet:mankoff_2021 published with data
++ Use published (1 \sigma) uncertainty because that uncertainty treatment is already conservative and if using 2 \sigma, mass gain occurs most year for =lo= estimates.
+
+** Output only positive values: results
+
+# Use NetCDF that contains uncertainty
 
 #+BEGIN_SRC jupyter-python :exports results
 import xarray as xr
@@ -1173,8 +1180,29 @@ From citet:rignot_2019
 | East      | -14 | -37  |
 
     
-** Output
+** Output: notes
 
+From citet:slater_2021 Table 1, uncertainties for Antarctica are:
+
+| Component          | Uncertainty [Gt yr^{-1} |
+|--------------------+-------------------------|
+| Ice shelf calving  |                      36 |
+| Ice shelf thinning |                      39 |
+| Antarctic land ice |                      24 |
+
++ Assuming these are uncorrelated, average 1\sigma uncertainty is +- 19 Gt/yr
++ We'll use 2\sigma uncertainty for hi/lo estimates
+
+#+BEGIN_SRC jupyter-python :exports both
+from uncertainties import unumpy
+arr = unumpy.uarray([1,1,1], [36,39,24])
+arr.mean()
+#+END_SRC
+
+#+RESULTS:
+: 1.0+/-19.4164878389476
+
+** Output: code
 #+BEGIN_SRC jupyter-python :exports none
 import pandas as pd
 
@@ -1201,14 +1229,30 @@ df = df['Total'].round(1)
 df = df * -1 # Model expects positive values for mass loss
 
 df.index = df.index.year
-f = open('out/mass_change_antarctica.csv', 'w')
-f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
-f.write('# Code: https://github.com/NASA-GISS/freshwater-anomaly\n')
-f.write('# Data: Slater /et al./ (2021)\n')
-f.write('# Summary: Annual mass loss from Antarctica.\n')
-f.write('# Year\tGt/yr\n')
-df.to_csv(f, header=False, sep='\t')
-f.close()
+
+
+f_mid = open('out/mass_change_antarctica.csv', 'w')
+f_hi = open('out/mass_change_antarctica_hi.csv', 'w')
+f_lo = open('out/mass_change_antarctica_lo.csv', 'w')
+
+for f in [f_mid,f_hi,f_lo]:
+    f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
+    f.write('# Code: https://github.com/NASA-GISS/freshwater-anomaly\n')
+    f.write('# Data: Slater /et al./ (2021)\n')
+    f.write('# Summary: Annual mass loss from Antarctica')
+    if f == f_hi: f.write(' (high estimate)')
+    if f == f_lo: f.write(' (low estimate)')
+    f.write(".\n")
+    f.write('# Year\tGt/yr\n')
+
+
+df.to_csv(f_mid, header=False, sep='\t')
+(df-(2*19)).to_csv(f_lo, header=False, sep='\t')
+(df+(2*19)).to_csv(f_hi, header=False, sep='\t')
+
+for f in [f_mid,f_hi,f_lo]:
+    f.close()
+
 #+END_SRC
 
 #+RESULTS:
@@ -1216,7 +1260,6 @@ f.close()
 #+BEGIN_SRC bash :results verbatim :exports results
 cat out/mass_change_antarctica.csv
 #+END_SRC
-
 
 #+RESULTS:
 #+begin_example
