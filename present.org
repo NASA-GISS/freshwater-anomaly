@@ -1189,18 +1189,12 @@ From citet:slater_2021 Table 1, uncertainties for Antarctica are:
 | Ice shelf calving  |                      36 |
 | Ice shelf thinning |                      39 |
 | Antarctic land ice |                      24 |
+|--------------------+-------------------------|
+| MEAN               |                      33 |
+#+TBLFM: @>$2=vmean(@2..@-1)
 
-+ Assuming these are uncorrelated, average 1\sigma uncertainty is +- 19 Gt/yr
++ Take the average, assume that is 1 \sigma
 + We'll use 2\sigma uncertainty for hi/lo estimates
-
-#+BEGIN_SRC jupyter-python :exports both
-from uncertainties import unumpy
-arr = unumpy.uarray([1,1,1], [36,39,24])
-arr.mean()
-#+END_SRC
-
-#+RESULTS:
-: 1.0+/-19.4164878389476
 
 ** Output: code
 #+BEGIN_SRC jupyter-python :exports none
@@ -1247,8 +1241,8 @@ for f in [f_mid,f_hi,f_lo]:
 
 
 df.to_csv(f_mid, header=False, sep='\t')
-(df-(2*19)).to_csv(f_lo, header=False, sep='\t')
-(df+(2*19)).to_csv(f_hi, header=False, sep='\t')
+(df-(2*33)).to_csv(f_lo, header=False, sep='\t')
+(df+(2*33)).to_csv(f_hi, header=False, sep='\t')
 
 for f in [f_mid,f_hi,f_lo]:
     f.close()
