@@ -1193,8 +1193,8 @@ From citet:slater_2021 Table 1, uncertainties for Antarctica are:
 | MEAN               |                      33 |
 #+TBLFM: @>$2=vmean(@2..@-1)
 
-+ Take the average, assume that is 1 \sigma
-+ We'll use 2\sigma uncertainty for hi/lo estimates
++ Assume these are 1 \sigma uncertainty
++ hi/lo estimates use the mean (33), max (39) or sum(99)
 
 ** Output: code
 #+BEGIN_SRC jupyter-python :exports none
@@ -1226,25 +1226,33 @@ df.index = df.index.year
 
 
 f_mid = open('out/mass_change_antarctica.csv', 'w')
-f_hi = open('out/mass_change_antarctica_hi.csv', 'w')
-f_lo = open('out/mass_change_antarctica_lo.csv', 'w')
+f_hi_mean = open('out/mass_change_antarctica_hi_mean.csv', 'w')
+f_lo_mean = open('out/mass_change_antarctica_lo_mean.csv', 'w')
+f_hi_max = open('out/mass_change_antarctica_hi_max.csv', 'w')
+f_lo_max = open('out/mass_change_antarctica_lo_max.csv', 'w')
+f_hi_sum = open('out/mass_change_antarctica_hi_sum.csv', 'w')
+f_lo_sum = open('out/mass_change_antarctica_lo_sum.csv', 'w')
 
-for f in [f_mid,f_hi,f_lo]:
+for f in [f_mid,f_hi_mean,f_hi_max,f_hi_sum,f_lo_mean,f_lo_max,f_lo_sum]:
     f.write('# Contact: Ken Mankoff <ken.mankoff@nasa.gov>\n')
     f.write('# Code: https://github.com/NASA-GISS/freshwater-anomaly\n')
     f.write('# Data: Slater /et al./ (2021)\n')
     f.write('# Summary: Annual mass loss from Antarctica')
-    if f == f_hi: f.write(' (high estimate)')
-    if f == f_lo: f.write(' (low estimate)')
+    if f in [f_hi_mean,f_hi_max,f_hi_sum]: f.write(' (high estimate)')
+    if f in [f_lo_mean,f_lo_max,f_lo_sum]: f.write(' (low estimate)')
     f.write(".\n")
     f.write('# Year\tGt/yr\n')
 
 
 df.to_csv(f_mid, header=False, sep='\t')
-(df-(2*33)).to_csv(f_lo, header=False, sep='\t')
-(df+(2*33)).to_csv(f_hi, header=False, sep='\t')
+(df-(2*33)).to_csv(f_lo_mean, header=False, sep='\t')
+(df+(2*33)).to_csv(f_hi_mean, header=False, sep='\t')
+(df-(2*39)).to_csv(f_lo_max, header=False, sep='\t')
+(df+(2*39)).to_csv(f_hi_max, header=False, sep='\t')
+(df-(2*99)).to_csv(f_lo_sum, header=False, sep='\t')
+(df+(2*99)).to_csv(f_hi_sum, header=False, sep='\t')
 
-for f in [f_mid,f_hi,f_lo]:
+for f in [f_mid,f_hi_mean,f_hi_max,f_hi_sum,f_lo_mean,f_lo_max,f_lo_sum]:
     f.close()
 
 #+END_SRC

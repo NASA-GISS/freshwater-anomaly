@@ -46,8 +46,8 @@ head out/mass_change_antarctica.csv
 
 Notes
 + Time series extended back and forward from data range to 1990-2019 using average of first or last three years of data
-+ =_hi= and =_lo= are +- 66 Gt/yr
-  + This comes from published Slater /et. al/ (2021) uncertainties, assuming 1 \sigma uncertainty is the average of reported values in Table 1 for ice shelf thinning, ice shelf calving, and Antarctic grounded ice.
++ =_hi= and =_lo= are +- mean 66 Gt/yr, max 72 Gt/yr, and sum 198 Gt/yr
+  + This comes from published Slater /et. al/ (2021) uncertainties, assuming 1 \sigma uncertainty in Table 1 for ice shelf thinning, ice shelf calving, and Antarctic grounded ice.
 
 ** Greenland
 
