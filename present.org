@@ -1538,7 +1538,7 @@ df
 
 
 ** New mask creation                                    :noexport:
-*** 100 km buffer around Greenland (raw)                :noexport:
+*** 50, 100, 250, 500 km buffer around Greenland (raw)  :noexport:
 
 + Generate on 1/8 ° (lat,lon) grid grid
 + Can then be resampled as needed
@@ -1574,14 +1574,20 @@ v.to.rast input=M2019 output=M2019 type=area use=attr attribute_column=REGION
 r.grow.distance -m input=M2019 value=M2019_grow distance=distance metric=geodesic
 
 # r.mapcalc "ocean5km = if((distance > 0) & (distance < 50000), M2019_grow, null())"
-r.mapcalc "ocean_gl = if((distance > 0) & (distance < 100000), M2019_grow, null())"
+r.mapcalc "ocean_gl_500 = if((distance > 0) & (distance < 500000), M2019_grow, null())"
+r.mapcalc "ocean_gl_250 = if((distance > 0) & (distance < 250000), M2019_grow, null())"
+r.mapcalc "ocean_gl_100 = if((distance > 0) & (distance < 100000), M2019_grow, null())"
+r.mapcalc "ocean_gl_050 = if((distance > 0) & (distance < 50000), M2019_grow, null())"
 
 # r.out.gdal format=netCDF input=ocean5km output=tmp/ocean5km.nc
-r.out.gdal format=netCDF input=ocean_gl output=tmp/ocean_gl.nc
+r.out.gdal format=netCDF input=ocean_gl_500 output=tmp/ocean_gl_500.nc
+r.out.gdal format=netCDF input=ocean_gl_250 output=tmp/ocean_gl_250.nc
+r.out.gdal format=netCDF input=ocean_gl_100 output=tmp/ocean_gl_100.nc
+r.out.gdal format=netCDF input=ocean_gl_050 output=tmp/ocean_gl_050.nc
 #+END_SRC
 
 
-*** 500 km around Antarctic shelves
+*** 50, 100, 250, 500 km around Antarctica
 
 #+BEGIN_SRC bash
 # grass ./G/PERMANENT
@@ -1599,8 +1605,15 @@ v.to.rast input=boundary output=boundary type=area use=val val=1
 
 r.grow.distance -m input=shelf value=shelf_grow distance=distance_aq metric=geodesic
 
-r.mapcalc "ocean_aq = if((distance_aq > 0) & (distance_aq < 500000) & isnull(boundary) & (y() > -80), shelf_grow, null())"
-r.out.gdal format=netCDF input=ocean_aq output=tmp/ocean_aq.nc
+r.mapcalc "ocean_aq_500 = if((distance_aq > 0) & (distance_aq < 500000) & isnull(boundary) & (y() > -80), shelf_grow, null())"
+r.mapcalc "ocean_aq_250 = if((distance_aq > 0) & (distance_aq < 250000) & isnull(boundary) & (y() > -80), shelf_grow, null())"
+r.mapcalc "ocean_aq_100 = if((distance_aq > 0) & (distance_aq < 100000) & isnull(boundary) & (y() > -80), shelf_grow, null())"
+r.mapcalc "ocean_aq_050 = if((distance_aq > 0) & (distance_aq < 50000) & isnull(boundary) & (y() > -80), shelf_grow, null())"
+
+r.out.gdal format=netCDF input=ocean_aq_500 output=tmp/ocean_aq_500.nc
+r.out.gdal format=netCDF input=ocean_aq_250 output=tmp/ocean_aq_250.nc
+r.out.gdal format=netCDF input=ocean_aq_100 output=tmp/ocean_aq_100.nc
+r.out.gdal format=netCDF input=ocean_aq_050 output=tmp/ocean_aq_050.nc
 #+END_SRC
 
 *** Build mask with scaled distribution                 :noexport:
@@ -1613,9 +1626,7 @@ WARNING: This spreads the distribution per sector over the number of grid cells.
 import numpy as np
 import xarray as xr
 
-aq = xr.open_dataset('./tmp/ocean_aq.nc')
-
-ds = xr.open_dataset('./tmp/ocean_gl.nc')
+ds = xr.open_dataset('./tmp/ocean_gl_050.nc')
 ds['lon'].attrs['units'] = 'degrees_east'
 ds['lat'].attrs['units'] = 'degrees_north'
 
@@ -1632,10 +1643,13 @@ ROI[b1 == 11] = 'NW'
 ROI[b1 == b1[0,0]] = ''
 ds['ROI'] = (('lat','lon'), ROI)
 ds['ROI'].attrs['ROI_source'] = 'Mouginot /et al./ (2019); https://doi.org/10.7280/D1WT11'
-
-ds['ones'] = (ds['Band1'].notnull()+aq['Band1'].notnull()).astype(np.int32)
-ds['ones'].attrs['description'] = 'Grid cells with freshwater runoff, submarine melt, or iceberg forcing'
 ds = ds.drop_vars('Band1')
+
+for dist in ['050', '100', '250', '500']:
+    gl = xr.open_dataset('./tmp/ocean_gl_'+dist+'.nc')
+    aq = xr.open_dataset('./tmp/ocean_aq_'+dist+'.nc')
+    ds['ones_'+dist] = (gl['Band1'].notnull()+aq['Band1'].notnull()).astype(np.int32)
+    ds['ones_'+dist].attrs['description'] = 'Grid cells w/in '+dist+' km of coast with freshwater runoff, submarine melt, or iceberg forcing'
 
 # ds['base'] = ds['ones']
 # ds['base'].attrs['description'] = 'Baseline freshwater runoff, submarine melt, or iceberg forcing, scaled by sector contribution'
@@ -1646,33 +1660,33 @@ ds = ds.drop_vars('Band1')
 # ds['base_liquid'] = ds['ones']
 # ds['base_liquid'].attrs['description'] = 'Baseline freshwater runoff and submarine melt scaled by sector contribution'
 
-ds['anom'] = ds['ones'].astype(np.float32)
-ds['anom'].attrs['description'] = 'Anomaly freshwater runoff, submarine melt, or iceberg forcing, scaled by sector contribution'
-contrib = {'CE':1, 'CW':24, 'NO':12, 'NE':17, 'NW':29, 'SE':5, 'SW':11}
-ds['anom'].attrs['distribution_pct'] = str(contrib)
-# ds['anom'] = ds['anom'].where(ds['ROI'] != 'CE', other=(1  / ds['ones'].where(ds['ROI'] == 'CE').sum().data))
-# ds['anom'] = ds['anom'].where(ds['ROI'] != 'CW', other=(24 / ds['ones'].where(ds['ROI'] == 'CW').sum().data))
-# ds['anom'] = ds['anom'].where(ds['ROI'] != 'NO', other=(12 / ds['ones'].where(ds['ROI'] == 'NO').sum().data))
-# ds['anom'] = ds['anom'].where(ds['ROI'] != 'NE', other=(17 / ds['ones'].where(ds['ROI'] == 'NE').sum().data))
-# ds['anom'] = ds['anom'].where(ds['ROI'] != 'NW', other=(29 / ds['ones'].where(ds['ROI'] == 'NW').sum().data))
-# ds['anom'] = ds['anom'].where(ds['ROI'] != 'SE', other=(5  / ds['ones'].where(ds['ROI'] == 'SE').sum().data))
-# ds['anom'] = ds['anom'].where(ds['ROI'] != 'SW', other=(11 / ds['ones'].where(ds['ROI'] == 'SW').sum().data))
-for k,v in contrib.items():
-    ds['anom'] = ds['anom'].where(ds['ROI'] != k, other=(v  / ds['ones'].where(ds['ROI'] == k).sum().data))
+# ds['anom'] = ds['ones'].astype(np.float32)
+# ds['anom'].attrs['description'] = 'Anomaly freshwater runoff, submarine melt, or iceberg forcing, scaled by sector contribution'
+# contrib = {'CE':1, 'CW':24, 'NO':12, 'NE':17, 'NW':29, 'SE':5, 'SW':11}
+# ds['anom'].attrs['distribution_pct'] = str(contrib)
+# # ds['anom'] = ds['anom'].where(ds['ROI'] != 'CE', other=(1  / ds['ones'].where(ds['ROI'] == 'CE').sum().data))
+# # ds['anom'] = ds['anom'].where(ds['ROI'] != 'CW', other=(24 / ds['ones'].where(ds['ROI'] == 'CW').sum().data))
+# # ds['anom'] = ds['anom'].where(ds['ROI'] != 'NO', other=(12 / ds['ones'].where(ds['ROI'] == 'NO').sum().data))
+# # ds['anom'] = ds['anom'].where(ds['ROI'] != 'NE', other=(17 / ds['ones'].where(ds['ROI'] == 'NE').sum().data))
+# # ds['anom'] = ds['anom'].where(ds['ROI'] != 'NW', other=(29 / ds['ones'].where(ds['ROI'] == 'NW').sum().data))
+# # ds['anom'] = ds['anom'].where(ds['ROI'] != 'SE', other=(5  / ds['ones'].where(ds['ROI'] == 'SE').sum().data))
+# # ds['anom'] = ds['anom'].where(ds['ROI'] != 'SW', other=(11 / ds['ones'].where(ds['ROI'] == 'SW').sum().data))
+# for k,v in contrib.items():
+#     ds['anom'] = ds['anom'].where(ds['ROI'] != k, other=(v  / ds['ones'].where(ds['ROI'] == k).sum().data))
 
-ds['anom_solid'] = ds['ones'].astype(np.float32)
-ds['anom_solid'].attrs['description'] = 'Anomaly iceberg forcing, scaled by sector contribution'
-contrib = {'CE':16, 'CW':17, 'NO':5, 'NE':5, 'NW':21, 'SE':31, 'SW':4}
-ds['anom_solid'].attrs['distribution_pct'] = str(contrib)
-for k,v in contrib.items():
-    ds['anom_solid'] = ds['anom_solid'].where(ds['ROI'] != k, other=(v  / ds['ones'].where(ds['ROI'] == k).sum().data))
+# ds['anom_solid'] = ds['ones'].astype(np.float32)
+# ds['anom_solid'].attrs['description'] = 'Anomaly iceberg forcing, scaled by sector contribution'
+# contrib = {'CE':16, 'CW':17, 'NO':5, 'NE':5, 'NW':21, 'SE':31, 'SW':4}
+# ds['anom_solid'].attrs['distribution_pct'] = str(contrib)
+# for k,v in contrib.items():
+#     ds['anom_solid'] = ds['anom_solid'].where(ds['ROI'] != k, other=(v  / ds['ones'].where(ds['ROI'] == k).sum().data))
 
-ds['anom_liquid'] = ds['ones'].astype(np.float32)
-ds['anom_liquid'].attrs['description'] = 'Anomaly freshwater runoff and submarine melt scaled by sector contribution'
-contrib = {'CE':13, 'CW':10, 'NO':11, 'NE':9, 'NW':12, 'SE':17, 'SW':27}
-ds['anom_liquid'].attrs['distribution_pct'] = str(contrib)
-for k,v in contrib.items():
-    ds['anom_liquid'] = ds['anom_liquid'].where(ds['ROI'] != k, other=(v  / ds['ones'].where(ds['ROI'] == k).sum().data))
+# ds['anom_liquid'] = ds['ones'].astype(np.float32)
+# ds['anom_liquid'].attrs['description'] = 'Anomaly freshwater runoff and submarine melt scaled by sector contribution'
+# contrib = {'CE':13, 'CW':10, 'NO':11, 'NE':9, 'NW':12, 'SE':17, 'SW':27}
+# ds['anom_liquid'].attrs['distribution_pct'] = str(contrib)
+# for k,v in contrib.items():
+#     ds['anom_liquid'] = ds['anom_liquid'].where(ds['ROI'] != k, other=(v  / ds['ones'].where(ds['ROI'] == k).sum().data))
 
 ds['crs'] = True
 ds['crs'].attrs['grid_mapping_name'] = 'latitude_longitude'
@@ -1686,7 +1700,7 @@ ds.attrs = {}
 ds.attrs['Creator'] = 'Ken Mankoff'
 ds.attrs['email'] = 'ken.mankoff@nasa.gov'
 ds.attrs['source'] = 'https://github.com/NASA-GISS/freshwater-anomaly'
-        
+
 ds.to_netcdf('./out/fw.nc')
 
 # current resolution: 1/8
@@ -1699,11 +1713,10 @@ ds2 = ds.groupby_bins('lat', latbins, labels=latbins[:-1]+0.5)\
         .median()\
         .rename({'lat_bins':'lat','lon_bins':'lon'})\
         .transpose() # Model expects variables to be (lat,lon)
-ds2 = ds2.rename({'ones':'mask'})
+# ds2 = ds2.rename({'ones':'mask'})
 ds2['lon'].attrs['units'] = 'degrees_east'
 ds2['lat'].attrs['units'] = 'degrees_north'
 ds2.to_netcdf('./out/fw_288x180.nc', format='NETCDF3_CLASSIC')
-
 
 # Trickier: non-uniform lat bins
 # ds['ones'].coarsen(lat=int(4/(1/8))).mean().coarsen(lon=int(5/(1/8))).mean().to_netcdf('./dat/fw_4x5.nc')
@@ -1713,21 +1726,28 @@ print(ds2)
 #+RESULTS:
 #+begin_example
 <xarray.Dataset>
-Dimensions:      (lon: 288, lat: 180)
+Dimensions:   (lon: 288, lat: 180)
 Coordinates:
-  ,* lat          (lat) float64 -89.5 -88.5 -87.5 -86.5 ... 86.5 87.5 88.5 89.5
-  ,* lon          (lon) float64 -179.4 -178.1 -176.9 -175.6 ... 176.9 178.1 179.4
+  ,* lat       (lat) float64 -89.5 -88.5 -87.5 -86.5 ... 86.5 87.5 88.5 89.5
+  ,* lon       (lon) float64 -179.4 -178.1 -176.9 -175.6 ... 176.9 178.1 179.4
 Data variables:
-    crs          (lat, lon) float64 1.0 1.0 1.0 1.0 1.0 ... 1.0 1.0 1.0 1.0 1.0
-    mask         (lat, lon) float64 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
-    anom         (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
-    anom_solid   (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
-    anom_liquid  (lat, lon) float32 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    crs       (lat, lon) float64 1.0 1.0 1.0 1.0 1.0 1.0 ... 1.0 1.0 1.0 1.0 1.0
+    ones_050  (lat, lon) float64 0.0 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    ones_100  (lat, lon) float64 0.0 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    ones_250  (lat, lon) float64 0.0 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
+    ones_500  (lat, lon) float64 0.0 0.0 0.0 0.0 0.0 0.0 ... 0.0 0.0 0.0 0.0 0.0
 Attributes:
     Creator:  Ken Mankoff
     email:    ken.mankoff@nasa.gov
     source:   https://github.com/NASA-GISS/freshwater-anomaly
 #+end_example
+
+*** Variable to mask                                    :noexport:
+
+#+BEGIN_SRC bash :exports both :results verbatim
+cdo chname,ones_100,mask fw.nc fw_100.nc
+ncrename -v ones_100,mask fw.nc fw_100.nc
+#+END_SRC
 
 *** NOT USED                                            :noexport:
 

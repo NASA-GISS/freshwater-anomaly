@@ -79,12 +79,7 @@ Notes
 ** 288x180
 
 + 1/8th degree distribution mask
-+ Greenland: 100 km
-+ Antarctica: 250 km
-+ =mask= is 1 in each cell
-+ =anom= is weighted by total anomaly per region
-+ =anom_solid= is weighted by solid discharge anomaly per region
-+ =anom_liquid= is weighted by liquid runoff anomaly per region
++ Buffers at 50, 100, 250, and 500 km
 
 #+BEGIN_SRC bash :results verbatim :exports both
 ncdump -chs out/fw_288x180.nc
@@ -101,25 +96,22 @@ variables:
 		crs:_FillValue = NaN ;
 		crs:grid_mapping_name = "latitude_longitude" ;
 		crs:grid_mapping = "crs" ;
-	double mask(lat, lon) ;
-		mask:_FillValue = 0. ;
-		mask:description = "Grid cells with freshwater runoff, submarine melt, or iceberg forcing" ;
-		mask:grid_mapping = "crs" ;
-	float anom(lat, lon) ;
-		anom:_FillValue = 0.f ;
-		anom:description = "Anomaly freshwater runoff, submarine melt, or iceberg forcing, scaled by sector contribution" ;
-		anom:distribution_pct = "{\'CE\': 1, \'CW\': 24, \'NO\': 12, \'NE\': 17, \'NW\': 29, \'SE\': 5, \'SW\': 11}" ;
-		anom:grid_mapping = "crs" ;
-	float anom_solid(lat, lon) ;
-		anom_solid:_FillValue = 0.f ;
-		anom_solid:description = "Anomaly iceberg forcing, scaled by sector contribution" ;
-		anom_solid:distribution_pct = "{\'CE\': 16, \'CW\': 17, \'NO\': 5, \'NE\': 5, \'NW\': 21, \'SE\': 31, \'SW\': 4}" ;
-		anom_solid:grid_mapping = "crs" ;
-	float anom_liquid(lat, lon) ;
-		anom_liquid:_FillValue = 0.f ;
-		anom_liquid:description = "Anomaly freshwater runoff and submarine melt scaled by sector contribution" ;
-		anom_liquid:distribution_pct = "{\'CE\': 13, \'CW\': 10, \'NO\': 11, \'NE\': 9, \'NW\': 12, \'SE\': 17, \'SW\': 27}" ;
-		anom_liquid:grid_mapping = "crs" ;
+	double ones_050(lat, lon) ;
+		ones_050:_FillValue = 0. ;
+		ones_050:description = "Grid cells w/in 050 km of coast with freshwater runoff, submarine melt, or iceberg forcing" ;
+		ones_050:grid_mapping = "crs" ;
+	double ones_100(lat, lon) ;
+		ones_100:_FillValue = 0. ;
+		ones_100:description = "Grid cells w/in 100 km of coast with freshwater runoff, submarine melt, or iceberg forcing" ;
+		ones_100:grid_mapping = "crs" ;
+	double ones_250(lat, lon) ;
+		ones_250:_FillValue = 0. ;
+		ones_250:description = "Grid cells w/in 250 km of coast with freshwater runoff, submarine melt, or iceberg forcing" ;
+		ones_250:grid_mapping = "crs" ;
+	double ones_500(lat, lon) ;
+		ones_500:_FillValue = 0. ;
+		ones_500:description = "Grid cells w/in 500 km of coast with freshwater runoff, submarine melt, or iceberg forcing" ;
+		ones_500:grid_mapping = "crs" ;
 	double lat(lat) ;
 		lat:_FillValue = NaN ;
 		lat:units = "degrees_north" ;
