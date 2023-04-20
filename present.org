@@ -1616,6 +1616,146 @@ r.out.gdal format=netCDF input=ocean_aq_100 output=tmp/ocean_aq_100.nc
 r.out.gdal format=netCDF input=ocean_aq_050 output=tmp/ocean_aq_050.nc
 #+END_SRC
 
+*** Realistic distribution
+
+**** Antarctica
+From citet:rignot_2019 Table 2, 2009 to 2017
+
+| Loc       | Mass                  | %                        |
+|-----------+-----------------------+--------------------------|
+| W dM + dD | -159-132 = -291       | 291/466 = 0.624463519313 |
+| P dM + dD | -42 - 45 = -87        | 87/466 = 0.18669527897   |
+| E dM + dD | -51 - 37 = -88        | 88/466 = 0.188841201717  |
+|-----------+-----------------------+--------------------------|
+| Total     | -291 - 87 - 88 = -466 | 62+19+19 = 100           |
+
+Experiment
+| Location  | Amount |
+|-----------+--------|
+| West      |     70 |
+| East      |     15 |
+| Peninsula |     15 |
+
+**** Greenland
+
+Solid and liquid discharge combined by sector
+
+From [[id:20230127T114208][Greenland mass loss by ROI [%]​]]
+
+#+NAME: d_and_r
+| region | Discharge | Runoff |
+|--------+-----------+--------|
+| CE     |        16 |     13 |
+| CW     |        17 |     10 |
+| NE     |         5 |     11 |
+| NO     |         5 |      9 |
+| NW     |        21 |     12 |
+| SE     |        31 |     17 |
+| SW     |         4 |     27 |
+| TOTAL  |        99 |     99 |
+
+#+BEGIN_SRC python :results output :exports both :var dr=d_and_r :colnames no
+import numpy as np
+import pandas as pd
+
+dr = np.array(dr)
+df = pd.DataFrame(data=dr[1:-1,1:].astype(int), columns=dr[0,1:], index=dr[1:-1,0])
+
+df['Sum'] = df['Discharge'] + df['Runoff']
+df['Sum'] = (df['Sum']/df['Sum'].sum()*100).round()
+df.loc['Total'] = df.sum()
+print(df)
+#+END_SRC
+#+RESULTS:
+:        Discharge  Runoff    Sum
+: CE          16.0    13.0   15.0
+: CW          17.0    10.0   14.0
+: NE           5.0    11.0    8.0
+: NO           5.0     9.0    7.0
+: NW          21.0    12.0   17.0
+: SE          31.0    17.0   24.0
+: SW           4.0    27.0   16.0
+: Total       99.0    99.0  101.0
+
+**** Code
+
+#+BEGIN_SRC bash
+# grass ./G/PERMANENT
+
+ogr2ogr -f KML tmp/aq.kml ${DATADIR}/NSIDC/NSIDC-0709.002/1992.02.07/IceBoundaries_Antarctica_v02.shp
+v.in.ogr input=tmp/aq.kml output=boundary
+
+r.mapcalc "peninsula = if((x() > -80) & (x() < -62) & (ocean_aq_100 == 1), 1.0, 0)"
+eval $(r.univar -g peninsula)
+P=$(echo 15/${sum} | bc -l) # peninsula percent, spread over number of peninsula cells
+r.mapcalc "peninsula = if(peninsula == 1, ${P})"
+
+r.mapcalc "east = if((x() > 20) & (x() < 180) & (ocean_aq_100 == 1), 1.0, 0)"
+eval $(r.univar -g east)
+E=$(echo 15/${sum} | bc -l) # east percent, spread over number of east cells
+r.mapcalc "east = if(east == 1, ${E})"
+
+r.mapcalc "west = if((x() > -150) & (x() < -90) & (ocean_aq_100 == 1), 1.0, 0)"
+eval $(r.univar -g west)
+W=$(echo 70/${sum} | bc -l) # west percent, spread over number of west cells
+r.mapcalc "west = if(west == 1, ${W})"
+
+
+
+r.mapcalc "CE = if(ocean_gl_100 == 3, 1.0, 0)"
+eval $(r.univar -g CE)
+x=$(echo 15/${sum} | bc -l)
+r.mapcalc "CE = if(CE == 1, ${x})"
+
+r.mapcalc "CW = if(ocean_gl_100 == 9, 1.0, 0)"
+eval $(r.univar -g CW)
+x=$(echo 14/${sum} | bc -l)
+r.mapcalc "CW = if(CW == 1, ${x})"
+
+r.mapcalc "NE = if(ocean_gl_100 == 1, 1.0, 0)"
+eval $(r.univar -g NE)
+x=$(echo 8/${sum} | bc -l)
+r.mapcalc "NE = if(NE == 1, ${x})"
+
+r.mapcalc "NO = if(ocean_gl_100 == 12, 1.0, 0)"
+eval $(r.univar -g NO)
+x=$(echo 9/${sum} | bc -l)
+r.mapcalc "NO = if(NO == 1, ${x})"
+
+r.mapcalc "NW = if(ocean_gl_100 == 11, 1.0, 0)"
+eval $(r.univar -g NW)
+x=$(echo 17/${sum} | bc -l)
+r.mapcalc "NW = if(NW == 1, ${x})"
+
+r.mapcalc "SE = if(ocean_gl_100 == 5, 1.0, 0)"
+eval $(r.univar -g SE)
+x=$(echo 24/${sum} | bc -l)
+r.mapcalc "SE = if(SE == 1, ${x})"
+
+r.mapcalc "SW = if(ocean_gl_100 == 7, 1.0, 0)"
+eval $(r.univar -g SW)
+x=$(echo 16/${sum} | bc -l)
+r.mapcalc "SW = if(SW == 1, ${x})"
+
+
+r.mapcalc "ocean_aq_rignot = (east + west + peninsula)"
+r.mapcalc "ocean_gl_mankoff = (CE +  CW + SE + SW + NE + NW + NO)"
+
+r.null map=ocean_aq_rignot null=0
+r.null map=ocean_gl_mankoff null=0
+r.mapcalc "ocean_aq_gl = ocean_aq_rignot + ocean_gl_mankoff"
+r.null map=ocean_aq_gl setnull=0
+
+r.report -n ocean_aq_gl units=k
+r.univar ocean_aq_gl # sum = 200
+
+r.out.gdal format=netCDF input=ocean_aq_gl output=tmp/ocean_aq_gl_nonuniform.nc
+
+ncrename -v Band1,mask tmp/ocean_aq_gl_nonuniform.nc tmp.nc
+mv tmp.nc out/ocean_aq_gl_nonuniform.nc
+#+END_SRC
+
+
 *** Build mask with scaled distribution                 :noexport:
 
 + See slides above for [[id:20230127T114208][Greenland mass loss by ROI [%]​]]
