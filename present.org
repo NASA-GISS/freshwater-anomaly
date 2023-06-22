@@ -1755,6 +1755,47 @@ ncrename -v Band1,mask tmp/ocean_aq_gl_nonuniform.nc tmp.nc
 mv tmp.nc out/ocean_aq_gl_nonuniform.nc
 #+END_SRC
 
+Scale to 288x144
+
+#+BEGIN_SRC jupyter-python
+import numpy as np
+import xarray as xr
+
+ds = xr.open_dataset('./out/ocean_aq_gl_nonuniform.nc')
+ds['lon'].attrs['units'] = 'degrees_east'
+ds['lat'].attrs['units'] = 'degrees_north'
+
+ds['crs'] = True
+ds['crs'].attrs['grid_mapping_name'] = 'latitude_longitude'
+
+ds['mask'].attrs['grid_mapping'] = 'crs'
+ds['mask'].attrs['_FillValue'] = 0
+
+ds.attrs = {}        
+ds.attrs['Creator'] = 'Ken Mankoff'
+ds.attrs['email'] = 'ken.mankoff@nasa.gov'
+ds.attrs['source'] = 'https://github.com/NASA-GISS/freshwater-anomaly'
+
+latbins = np.arange(-90,90+1)
+lonbins = np.arange(-180+0.625, 180+0.625*2, 1.25)
+ds2 = ds.groupby_bins('lat', latbins, labels=latbins[:-1]+0.5)\
+        .max()\
+        .groupby_bins('lon', lonbins, labels=lonbins[:-1])\
+        .max()\
+        .rename({'lat_bins':'lat','lon_bins':'lon'})\
+        .transpose() # Model expects variables to be (lat,lon)
+# ds2 = ds2.rename({'ones':'mask'})
+ds2['lon'].attrs['units'] = 'degrees_east'
+ds2['lat'].attrs['units'] = 'degrees_north'
+ds2['mask'].attrs['_FillValue'] = 0
+ds2 = ds2.fillna(0)
+ds2.to_netcdf('./out/fw_nonuniform_288x180.nc', format='NETCDF3_CLASSIC')
+
+# Trickier: non-uniform lat bins
+# ds['ones'].coarsen(lat=int(4/(1/8))).mean().coarsen(lon=int(5/(1/8))).mean().to_netcdf('./dat/fw_4x5.nc')
+print(ds2)
+#+END_SRC
+
 
 *** Build mask with scaled distribution                 :noexport:
 
