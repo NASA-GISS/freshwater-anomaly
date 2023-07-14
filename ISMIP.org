@@ -1,0 +1,233 @@
+#+NAME: Combining observational and ISMIP freshwater forcing
+
+* Table of contents                               :toc_2:noexport:
+- [[#introduction][Introduction]]
+- [[#data][Data]]
+  - [[#greenland-observations][Greenland observations]]
+  - [[#antarctic-observations][Antarctic observations]]
+  - [[#merge-obs--ismip][Merge obs & ismip]]
+- [[#questions][Questions]]
+
+* Introduction
+
+Append ISMIP6 SLR estimates onto observationally constrained historical mass loss
+
+* Data
+
+** Greenland observations
+
++ From [[citet:mankoff_2021][Mankoff (2021)]]
++ Years with mass gain subtracted from following years so that all mass change is <= 0.
++ =hi= and =lo= years are +- published uncertainty from [[citet:mankoff_2021][Mankoff (2021)]]
+
+*** Load Greenland obs
+
+#+BEGIN_SRC jupyter-python
+import pandas as pd
+obs = pd.read_csv('./out/mass_change_no_gain_greenland.csv',
+                 index_col=0,
+                 parse_dates=True,
+                 comment='#',
+                 delim_whitespace=True,
+                 names=['Gt/yr'])
+obs.index.name='Date'
+#+END_SRC
+
+#+RESULTS:
+
+
+*** Greenland obs table
+
+#+BEGIN_SRC jupyter-python
+obs
+#+END_SRC
+
+#+RESULTS:
+| Date                | Gt/yr |
+|---------------------+-------|
+| 1990-01-01 00:00:00 | 137.6 |
+| 1991-01-01 00:00:00 |  76.7 |
+| 1992-01-01 00:00:00 |     0 |
+| 1993-01-01 00:00:00 |   3.6 |
+| 1994-01-01 00:00:00 | 113.8 |
+| 1995-01-01 00:00:00 | 211.9 |
+| 1996-01-01 00:00:00 |     0 |
+| 1997-01-01 00:00:00 |     0 |
+| 1998-01-01 00:00:00 |   102 |
+| 1999-01-01 00:00:00 |    47 |
+| 2000-01-01 00:00:00 |  77.1 |
+| 2001-01-01 00:00:00 |  26.1 |
+| 2002-01-01 00:00:00 | 142.5 |
+| 2003-01-01 00:00:00 | 167.2 |
+| 2004-01-01 00:00:00 | 165.8 |
+| 2005-01-01 00:00:00 | 168.4 |
+| 2006-01-01 00:00:00 | 239.8 |
+| 2007-01-01 00:00:00 | 257.3 |
+| 2008-01-01 00:00:00 | 201.2 |
+| 2009-01-01 00:00:00 |   243 |
+| 2010-01-01 00:00:00 | 376.8 |
+| 2011-01-01 00:00:00 | 336.2 |
+| 2012-01-01 00:00:00 | 429.3 |
+| 2013-01-01 00:00:00 | 107.9 |
+| 2014-01-01 00:00:00 | 184.6 |
+| 2015-01-01 00:00:00 | 213.9 |
+| 2016-01-01 00:00:00 |   256 |
+| 2017-01-01 00:00:00 | 102.6 |
+| 2018-01-01 00:00:00 |  75.8 |
+| 2019-01-01 00:00:00 |   426 |
+
+
+*** Greenland obs plot
+#+BEGIN_SRC jupyter-python
+_ = obs.plot(drawstyle='steps')
+#+END_SRC
+
+#+RESULTS:
+[[file:./figs_tmp/49456009d9f07ae08928903b21a69e5a2a16c6a6.png]]
+
+** Antarctic observations
+
++ From [[citet:slater_2021][Slater (2021)]]
+
+*** Uncertainty
+
+From [[citet:slater_2021][Slater (2021)]] Table 1
+
+| Component          | Uncertainty [Gt yr^{-1}] |
+|--------------------+--------------------------|
+| Ice shelf calving  |                       36 |
+| Ice shelf thinning |                       39 |
+| Antarctic land ice |                       24 |
+|--------------------+--------------------------|
+| mean               |                       33 |
+| sum                |                       99 |
+#+TBLFM: @5$2=vmean(@2..@-1)::@6$2=vsum(@2..@4)
+
++ Assume these are 1 \sigma uncertainty
++ lo/mid/hi estimates can use mean (33), max (39) or sum (99)
+
+**** If fields are random
+
+#+BEGIN_SRC jupyter-python
+from uncertainties import unumpy
+import numpy as np
+np.sum(unumpy.uarray([1,1,1], [36,39,24]))
+#+END_SRC
+
+#+RESULTS:
+: 3.0+/-58.249463516842795
+
+** Greenland ISMIP
+
+*** Load ISMIP SSP 245 50th percentile
+
+#+NAME: load_ismip
+#+BEGIN_SRC jupyter-python
+import xarray as xr
+ds = xr.open_dataset('./ISMIP6/emulandiceAIS_GIS_ssp245_globalsl_GT.nc')
+ismip = ds['GIS_sea_level_change']\
+    .sel(quantiles=50)\
+    .to_dataframe()\
+    .drop(['quantiles'], axis='columns')\
+    .rename(columns={'GIS_sea_level_change':'Gt/yr'})
+ismip.index.name = 'Date'
+ismip.index = [pd.to_datetime(_, format='%Y') for _ in ismip.index]
+#+END_SRC
+
+#+RESULTS: load_ismip
+
+*** Table
+
+#+BEGIN_SRC jupyter-python
+ismip
+#+END_SRC
+
+#+RESULTS:
+|                     | Gt/yr |
+|---------------------+-------|
+| 2020-01-01 00:00:00 |  1800 |
+| 2030-01-01 00:00:00 |  3960 |
+| 2040-01-01 00:00:00 |  6480 |
+| 2050-01-01 00:00:00 | 10080 |
+| 2060-01-01 00:00:00 | 12960 |
+| 2070-01-01 00:00:00 | 16920 |
+| 2080-01-01 00:00:00 | 20880 |
+| 2090-01-01 00:00:00 | 25200 |
+| 2100-01-01 00:00:00 | 27720 |
+
+*** ISMIP annual contribution
+
+#+BEGIN_SRC jupyter-python
+ismip_ann = ismip.resample('1Y').mean().interpolate().diff()
+_ = ismip_ann.plot(drawstyle='steps')
+#+END_SRC
+
+#+RESULTS:
+[[file:./figs_tmp/4e385e2c6ea7b86da42e1f39083fb83f2755ea28.png]]
+
+** Merge obs & ismip
+
+#+BEGIN_SRC jupyter-python
+df = pd.concat((obs, ismip_ann)).interpolate()
+df.head(50).tail(30)
+#+END_SRC
+
+#+RESULTS:
+|                     | Gt/yr |
+|---------------------+-------|
+| 2010-01-01 00:00:00 | 376.8 |
+| 2011-01-01 00:00:00 | 336.2 |
+| 2012-01-01 00:00:00 | 429.3 |
+| 2013-01-01 00:00:00 | 107.9 |
+| 2014-01-01 00:00:00 | 184.6 |
+| 2015-01-01 00:00:00 | 213.9 |
+| 2016-01-01 00:00:00 |   256 |
+| 2017-01-01 00:00:00 | 102.6 |
+| 2018-01-01 00:00:00 |  75.8 |
+| 2019-01-01 00:00:00 |   426 |
+| 2020-12-31 00:00:00 |   321 |
+| 2021-12-31 00:00:00 |   216 |
+| 2022-12-31 00:00:00 |   216 |
+| 2023-12-31 00:00:00 |   216 |
+| 2024-12-31 00:00:00 |   216 |
+| 2025-12-31 00:00:00 |   216 |
+| 2026-12-31 00:00:00 |   216 |
+| 2027-12-31 00:00:00 |   216 |
+| 2028-12-31 00:00:00 |   216 |
+| 2029-12-31 00:00:00 |   216 |
+| 2030-12-31 00:00:00 |   216 |
+| 2031-12-31 00:00:00 |   252 |
+| 2032-12-31 00:00:00 |   252 |
+| 2033-12-31 00:00:00 |   252 |
+| 2034-12-31 00:00:00 |   252 |
+| 2035-12-31 00:00:00 |   252 |
+| 2036-12-31 00:00:00 |   252 |
+| 2037-12-31 00:00:00 |   252 |
+| 2038-12-31 00:00:00 |   252 |
+| 2039-12-31 00:00:00 |   252 |
+
+*** Plot
+
+#+BEGIN_SRC jupyter-python
+import matplotlib.pyplot as plt
+fig = plt.figure()
+ax = fig.add_subplot(111)
+
+df.plot(drawstyle='steps', ax=ax)
+_ = obs.resample('10Y').mean().plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Obs: Decadal average')
+#+END_SRC
+
+#+RESULTS:
+[[file:./figs_tmp/09929bbfdf6976be9e0629cc039a626124e3d896.png]]
+
+* Questions
+
++ ISMIP
+  + Have 245 and 585
+  + For each, ~quantiles = [17, 50, 83]~
++ Greenland
+  + Have obs and obs+err (=mass_change_no_gain_greenland_hi.csv=)
+    + [ ] How to handle Greenland observational uncertainty?
++ Antarctica
+  + Have obs, and various fuzzy definitions of uncertainty
+    + [ ] How to handle Greenland observational uncertainty?
