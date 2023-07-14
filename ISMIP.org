@@ -2,36 +2,46 @@
 
 * Table of contents                               :toc_2:noexport:
 - [[#introduction][Introduction]]
-- [[#data][Data]]
+- [[#greenland][Greenland]]
   - [[#greenland-observations][Greenland observations]]
-  - [[#antarctic-observations][Antarctic observations]]
   - [[#greenland-ismip][Greenland ISMIP]]
-  - [[#merge-obs--ismip][Merge obs & ismip]]
-- [[#questions][Questions]]
+  - [[#merge-greenland-obs--ismip][Merge Greenland obs & ismip]]
+- [[#antarctica][Antarctica]]
+  - [[#antarctic-observations][Antarctic observations]]
+  - [[#antarctic-ismip][Antarctic ISMIP]]
+  - [[#merge-antarctic-obs--ismip][Merge Antarctic obs & ismip]]
+- [[#output][Output]]
+  - [[#page-and-fonts][Page and Fonts]]
+  - [[#code][Code]]
+  - [[#hyperref][Hyperref]]
+  - [[#figures][Figures]]
+  - [[#draft-mode][Draft Mode]]
+  - [[#headerfooter][Header/Footer]]
+  - [[#gitinfo][GitInfo]]
 
 * Introduction
 
 Append ISMIP6 SLR estimates onto observationally constrained historical mass loss
 
-* Data
+* Greenland
 
 ** Greenland observations
 
 + From [[citet:mankoff_2021][Mankoff (2021)]]
-+ Years with mass gain subtracted from following years so that all mass change is <= 0.
-+ =hi= and =lo= years are +- published uncertainty from [[citet:mankoff_2021][Mankoff (2021)]]
++ Years with mass gain subtracted from following years $\rightarrow$ all mass change is $\le$ 0.
++ =hi= and =lo= years are $\pm$ published uncertainty from [[citet:mankoff_2021][Mankoff (2021)]]
 
 *** Load Greenland obs
 
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC jupyter-python :exports both
 import pandas as pd
-obs = pd.read_csv('./out/mass_change_no_gain_greenland.csv',
+obs_GL = pd.read_csv('./out/mass_change_no_gain_greenland.csv',
                  index_col=0,
                  parse_dates=True,
                  comment='#',
                  delim_whitespace=True,
                  names=['Gt/yr'])
-obs.index.name='Date'
+obs_GL.index.name='Date'
 #+END_SRC
 
 #+RESULTS:
@@ -39,8 +49,8 @@ obs.index.name='Date'
 
 *** Greenland obs table
 
-#+BEGIN_SRC jupyter-python
-obs
+#+BEGIN_SRC jupyter-python :exports both
+obs_GL
 #+END_SRC
 
 #+RESULTS:
@@ -80,66 +90,33 @@ obs
 
 *** Greenland obs plot
 #+BEGIN_SRC jupyter-python :exports both
-_ = obs.plot(drawstyle='steps')
+_ = obs_GL.plot(drawstyle='steps')
 #+END_SRC
 
 #+RESULTS:
 [[file:./figs_tmp/49456009d9f07ae08928903b21a69e5a2a16c6a6.png]]
 
-** Antarctic observations
-
-+ From [[citet:slater_2021][Slater (2021)]]
-
-*** Uncertainty
-
-From [[citet:slater_2021][Slater (2021)]] Table 1
-
-| Component          | Uncertainty [Gt yr^{-1}] |
-|--------------------+--------------------------|
-| Ice shelf calving  |                       36 |
-| Ice shelf thinning |                       39 |
-| Antarctic land ice |                       24 |
-|--------------------+--------------------------|
-| mean               |                       33 |
-| sum                |                       99 |
-#+TBLFM: @5$2=vmean(@2..@-1)::@6$2=vsum(@2..@4)
-
-+ Assume these are 1 \sigma uncertainty
-+ lo/mid/hi estimates can use mean (33), max (39) or sum (99)
-
-**** If fields are random
-
-#+BEGIN_SRC jupyter-python
-from uncertainties import unumpy
-import numpy as np
-np.sum(unumpy.uarray([1,1,1], [36,39,24]))
-#+END_SRC
-
-#+RESULTS:
-: 3.0+/-58.249463516842795
-
 ** Greenland ISMIP
-
 *** Load ISMIP SSP 245
 
-#+NAME: load_ismip
-#+BEGIN_SRC jupyter-python
+#+NAME: load_ismip_GL
+#+BEGIN_SRC jupyter-python :exports both
 import xarray as xr
 ds = xr.open_dataset('./ISMIP6/emulandiceAIS_GIS_ssp245_globalsl_GT.nc')
-ismip = ds['GIS_sea_level_change']\
+ismip_GL = ds['GIS_sea_level_change']\
     .to_dataframe()\
     .unstack().T
 
-ismip.index = [pd.to_datetime(_[1], format='%Y') for _ in ismip.index]
-ismip.index.name = 'Date'
+ismip_GL.index = [pd.to_datetime(_[1], format='%Y') for _ in ismip_GL.index]
+ismip_GL.index.name = 'Date'
 #+END_SRC
 
-#+RESULTS: load_ismip
+#+RESULTS: load_ismip_GL
 
 *** Table
 
-#+BEGIN_SRC jupyter-python
-ismip
+#+BEGIN_SRC jupyter-python :exports result
+ismip_GL
 #+END_SRC
 
 #+RESULTS:
@@ -158,21 +135,20 @@ ismip
 *** ISMIP annual contribution
 
 #+BEGIN_SRC jupyter-python :exports both
-ismip_ann = ismip.resample('1Y').mean().interpolate().diff()
-_ = ismip_ann.plot(drawstyle='steps', title='Greenland freshwater [Gt yr$^{-1}$]')
+ismip_GL_ann = ismip_GL.resample('1Y').mean().interpolate().diff()
+_ = ismip_GL_ann.plot(drawstyle='steps', title='Greenland freshwater ISMIP6 245 [Gt yr$^{-1}$]')
 #+END_SRC
 
 #+RESULTS:
-[[file:./figs_tmp/7e86524a86633b5bf09d26614c2fc7975f01d334.png]]
+[[file:./figs_tmp/bc14fc58f9fba6219ce4f530e9a5a1f3b1442013.png]]
 
-** Merge obs & ismip
+** Merge Greenland obs & ismip
 
-#+BEGIN_SRC jupyter-python
-# pd.concat((obs, ismip_ann)).interpolate()
-obs_17_50_83 = pd.concat([obs]*3, axis='columns', ignore_index=True)
-obs_17_50_83 = obs_17_50_83.rename(columns={0:17, 1:50, 2:83})
-df = pd.concat((obs_17_50_83, ismip_ann)).interpolate()
-df.head(50).tail(30)
+#+BEGIN_SRC jupyter-python :exports both
+obs_GL_17_50_83 = pd.concat([obs_GL]*3, axis='columns', ignore_index=True)
+obs_GL_17_50_83 = obs_GL_17_50_83.rename(columns={0:17, 1:50, 2:83})
+df_GL = pd.concat((obs_GL_17_50_83, ismip_GL_ann)).interpolate()
+df_GL.head(50).tail(30)
 #+END_SRC
 
 #+RESULTS:
@@ -216,9 +192,9 @@ import matplotlib.pyplot as plt
 fig = plt.figure()
 ax = fig.add_subplot(111)
 
-obs_17_50_83[50].plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Observations', color='k')
-obs_17_50_83[50].resample('10Y').mean().plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Obs: Decadal average', color='k', alpha=0.5, linewidth=3)
-df.loc['2019':].plot(drawstyle='steps', ax=ax)
+obs_GL_17_50_83[50].plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Observations', color='k')
+obs_GL_17_50_83[50].resample('10Y').mean().plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Obs: Decadal average', color='k', alpha=0.5, linewidth=3)
+df_GL.loc['2019':].plot(drawstyle='steps', ax=ax)
 plt.title("Greenland freshwater: Historical obs -> ISMIP6 SSP245 projection")
 _ = plt.legend()
 #+END_SRC
@@ -226,14 +202,395 @@ _ = plt.legend()
 #+RESULTS:
 [[file:./figs_tmp/866f67d1253238697d386b1935d68b24b841e09b.png]]
 
-* Questions
 
-+ ISMIP
-  + Have 245 and 585
-  + For each, ~quantiles = [17, 50, 83]~
-+ Greenland
-  + Have obs and obs+err (=mass_change_no_gain_greenland_hi.csv=)
-    + [ ] How to handle Greenland observational uncertainty?
-+ Antarctica
-  + Have obs, and various fuzzy definitions of uncertainty
-    + [ ] How to handle Greenland observational uncertainty?
+* Antarctica
+** Antarctic observations
+
++ From [[citet:slater_2021][Slater (2021)]]
+
+*** Load Antarctic obs
+
+#+BEGIN_SRC jupyter-python :exports both
+import pandas as pd
+
+S2021_kw = {'parse_dates':True, 'index_col':0}
+shelf_calving = pd.read_csv('~/data/Slater_2021/iceshelves_calving_cumul_1994_2017_annual.csv', **S2021_kw)\
+                  .rename(columns={"Cumulative mass change (Gt)":"Ice Shelf Calving"})
+shelf_thinning = pd.read_csv('~/data/Slater_2021/iceshelves_thinning_cumul_1994_2017_annual.csv', **S2021_kw)\
+                   .rename(columns={"Cumulative mass change (Gt)":"Ice Shelf Thinning"})
+landice_AQ = pd.read_csv('~/data/Slater_2021/AIS_cumul_1994_2017_annual.csv', **S2021_kw)\
+               .rename(columns={"Cumulative mass change (Gt)":"Antarctica"})
+
+S2021_kw = {'left_index':True, 'right_index':True, 'how':'outer'}
+obs_AQ = shelf_calving.merge(shelf_thinning, **S2021_kw)\
+                      .merge(landice_AQ, **S2021_kw)
+obs_AQ.index.name = 'Date'
+
+obs_AQ = -1 * obs_AQ.diff()
+
+obs_AQ['Total'] = obs_AQ.sum(axis='columns')
+#+END_SRC
+
+#+RESULTS:
+
+*** Antarctic obs table
+
+#+BEGIN_SRC jupyter-python :exports both
+obs_AQ
+#+END_SRC
+
+#+RESULTS:
+| Date                | Ice Shelf Calving | Ice Shelf Thinning | Antarctica |   Total |
+|---------------------+-------------------+--------------------+------------+---------|
+| 1994-01-01 00:00:00 |               nan |                nan |        nan |       0 |
+| 1995-01-01 00:00:00 |            71.375 |             1.6598 |      37.17 | 110.205 |
+| 1996-01-01 00:00:00 |           71.4792 |           -17.3615 |      28.78 | 82.8977 |
+| 1997-01-01 00:00:00 |           126.945 |           -4.85001 |      32.31 | 154.405 |
+| 1998-01-01 00:00:00 |           126.946 |            38.3959 |      22.43 | 187.771 |
+| 1999-01-01 00:00:00 |           336.403 |            84.7815 |      78.73 | 499.915 |
+| 2000-01-01 00:00:00 |           307.921 |             91.948 |      28.27 | 428.139 |
+| 2001-01-01 00:00:00 |            332.46 |             76.967 |      20.98 | 430.407 |
+| 2002-01-01 00:00:00 |           139.388 |            108.552 |      28.99 |  276.93 |
+| 2003-01-01 00:00:00 |           139.388 |            189.182 |      96.01 |  424.58 |
+| 2004-01-01 00:00:00 |           139.388 |            269.945 |      78.91 | 488.243 |
+| 2005-01-01 00:00:00 |           139.387 |             297.37 |      16.89 | 453.647 |
+| 2006-01-01 00:00:00 |           139.388 |             312.36 |      95.35 | 547.098 |
+| 2007-01-01 00:00:00 |           139.388 |             332.43 |     207.72 | 679.538 |
+| 2008-01-01 00:00:00 |           139.388 |             347.33 |     113.88 | 600.598 |
+| 2009-01-01 00:00:00 |           139.388 |              306.2 |      89.15 | 534.738 |
+| 2010-01-01 00:00:00 |           139.388 |             216.62 |     229.38 | 585.388 |
+| 2011-01-01 00:00:00 |           139.388 |             129.18 |     147.99 | 416.558 |
+| 2012-01-01 00:00:00 |           139.388 |              95.05 |      209.4 | 443.838 |
+| 2013-01-01 00:00:00 |           139.387 |              90.42 |     269.75 | 499.557 |
+| 2014-01-01 00:00:00 |           139.388 |              55.86 |     261.69 | 456.938 |
+| 2015-01-01 00:00:00 |           139.387 |             -12.93 |     254.84 | 381.297 |
+| 2016-01-01 00:00:00 |           139.388 |             -49.23 |      67.02 | 157.178 |
+
+
+
+*** Antarctic obs plot
+
+#+BEGIN_SRC jupyter-python :exports both
+_ = obs_AQ.plot(drawstyle='steps')
+#+END_SRC
+
+#+RESULTS:
+[[file:./figs_tmp/77d67cba6ddbb200b4efdfa1220b68460ea5a7fd.png]]
+
+*** Uncertainty
+
+From [[citet:slater_2021][Slater (2021)]] Table 1
+
+| Component          | Uncertainty [Gt yr^{-1}] |
+|--------------------+--------------------------|
+| Ice shelf calving  |                       36 |
+| Ice shelf thinning |                       39 |
+| Antarctic land ice |                       24 |
+|--------------------+--------------------------|
+| mean               |                       33 |
+| sum                |                       99 |
+#+TBLFM: @5$2=vmean(@2..@-1)::@6$2=vsum(@2..@4)
+
++ Assume these are 1 \sigma uncertainty
++ lo/mid/hi estimates can use mean (33), max (39) or sum (99)
+
+**** If fields are random
+
+#+BEGIN_SRC jupyter-python :exports both
+from uncertainties import unumpy
+import numpy as np
+np.sum(unumpy.uarray([1,1,1], [36,39,24]))
+#+END_SRC
+
+#+RESULTS:
+: 3.0+/-58.249463516842795
+
+** Antarctic ISMIP
+
+*** Load ISMIP SSP 245
+
+#+NAME: load_ismip_AQ
+#+BEGIN_SRC jupyter-python :exports both
+import xarray as xr
+ds = xr.open_dataset('./ISMIP6/emulandiceAIS_GIS_ssp245_globalsl_GT.nc')
+ismip_AQ = ds['AIS_sea_level_change']\
+    .to_dataframe()\
+    .unstack().T
+
+ismip_AQ.index = [pd.to_datetime(_[1], format='%Y') for _ in ismip_AQ.index]
+ismip_AQ.index.name = 'Date'
+#+END_SRC
+
+#+RESULTS: load_ismip_AQ
+
+*** Table
+
+#+BEGIN_SRC jupyter-python :exports both
+ismip_AQ
+#+END_SRC
+
+#+RESULTS:
+| Date                |    50 |   17 |    83 |
+|---------------------+-------+------+-------|
+| 2020-01-01 00:00:00 |  2160 | 1440 |  3240 |
+| 2030-01-01 00:00:00 |  3960 | 2520 |  5400 |
+| 2040-01-01 00:00:00 |  6120 | 3600 |  8640 |
+| 2050-01-01 00:00:00 |  8640 | 5040 | 12600 |
+| 2060-01-01 00:00:00 | 11520 | 6120 | 16920 |
+| 2070-01-01 00:00:00 | 14580 | 6120 | 22680 |
+| 2080-01-01 00:00:00 | 18000 | 6480 | 29221 |
+| 2090-01-01 00:00:00 | 23760 | 8640 | 38581 |
+| 2100-01-01 00:00:00 | 28800 | 9720 | 50040 |
+
+*** ISMIP annual contribution
+
+#+BEGIN_SRC jupyter-python :exports both
+ismip_AQ_ann = ismip_AQ.resample('1Y').mean().interpolate().diff()
+_ = ismip_AQ_ann.plot(drawstyle='steps', title='Antarctic freshwater ISMIP6 245 [Gt yr$^{-1}$]')
+#+END_SRC
+
+#+RESULTS:
+[[file:./figs_tmp/4aa248b4c8b8d6f89792a5b0438ca6a73719fc87.png]]
+
+
+** Merge Antarctic obs & ismip
+
+#+BEGIN_SRC jupyter-python :exports both
+obs_AQ_17_50_83 = pd.concat([obs_AQ['Total']]*3, axis='columns', ignore_index=True)
+obs_AQ_17_50_83 = obs_AQ_17_50_83.rename(columns={0:17, 1:50, 2:83})
+df_AQ = pd.concat((obs_AQ_17_50_83, ismip_AQ_ann)).interpolate()
+df_AQ.head(50).tail(30)
+#+END_SRC
+
+#+RESULTS:
+| Date                |      17 |      50 |      83 |
+|---------------------+---------+---------+---------|
+| 2014-01-01 00:00:00 | 456.938 | 456.938 | 456.938 |
+| 2015-01-01 00:00:00 | 381.297 | 381.297 | 381.297 |
+| 2016-01-01 00:00:00 | 157.178 | 157.178 | 157.178 |
+| 2020-12-31 00:00:00 | 132.589 | 168.589 | 186.589 |
+| 2021-12-31 00:00:00 |     108 |     180 |     216 |
+| 2022-12-31 00:00:00 |     108 |     180 |     216 |
+| 2023-12-31 00:00:00 |     108 |     180 |     216 |
+| 2024-12-31 00:00:00 |     108 |     180 |     216 |
+| 2025-12-31 00:00:00 |     108 |     180 |     216 |
+| 2026-12-31 00:00:00 |     108 |     180 |     216 |
+| 2027-12-31 00:00:00 |     108 |     180 |     216 |
+| 2028-12-31 00:00:00 |     108 |     180 |     216 |
+| 2029-12-31 00:00:00 |     108 |     180 |     216 |
+| 2030-12-31 00:00:00 |     108 |     180 |     216 |
+| 2031-12-31 00:00:00 |     108 |     216 |     324 |
+| 2032-12-31 00:00:00 |     108 |     216 |     324 |
+| 2033-12-31 00:00:00 |     108 |     216 |     324 |
+| 2034-12-31 00:00:00 |     108 |     216 |     324 |
+| 2035-12-31 00:00:00 |     108 |     216 |     324 |
+| 2036-12-31 00:00:00 |     108 |     216 |     324 |
+| 2037-12-31 00:00:00 |     108 |     216 |     324 |
+| 2038-12-31 00:00:00 |     108 |     216 |     324 |
+| 2039-12-31 00:00:00 |     108 |     216 |     324 |
+| 2040-12-31 00:00:00 |     108 |     216 |     324 |
+| 2041-12-31 00:00:00 |     144 |     252 |     396 |
+| 2042-12-31 00:00:00 |     144 |     252 |     396 |
+| 2043-12-31 00:00:00 |     144 |     252 |     396 |
+| 2044-12-31 00:00:00 |     144 |     252 |     396 |
+| 2045-12-31 00:00:00 |     144 |     252 |     396 |
+| 2046-12-31 00:00:00 |     144 |     252 |     396 |
+
+
+*** Plot
+
+#+BEGIN_SRC jupyter-python :exports both
+import matplotlib.pyplot as plt
+fig = plt.figure()
+ax = fig.add_subplot(111)
+
+obs_AQ_17_50_83[50].plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Observations', color='k')
+obs_AQ_17_50_83[50].resample('10Y').mean().plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Obs: Decadal average', color='k', alpha=0.5, linewidth=3)
+df_AQ.loc['2016':].plot(drawstyle='steps', ax=ax)
+plt.title("Antarctic freshwater: Historical obs -> ISMIP6 SSP245 projection")
+_ = plt.legend(fontsize=8)
+#+END_SRC
+
+#+RESULTS:
+[[file:./figs_tmp/6e2e9784d7c14e372215f358e64ba810946c85b9.png]]
+
+* Output                                                :noexport:
+
+#+BEGIN_SRC jupyter-python
+
+def writer(da, fname):
+    dd = da.copy(deep=True)
+    dd.index = dd.index.year
+    dd.to_csv(fname, sep='\t', header=False)
+
+writer(df_AQ[17], './out/AQ_17.csv')
+writer(df_AQ[50], './out/AQ_50.csv')
+writer(df_AQ[83], './out/AQ_83.csv')
+writer(df_GL[17], './out/GL_17.csv')
+writer(df_GL[50], './out/GL_50.csv')
+writer(df_GL[83], './out/GL_83.csv')
+#+END_SRC
+
+#+RESULTS:
+TEX_HEADER_EXTRA:             style=authoryear,
+#+LATEX_HEADER_EXTRA:             %defernumbers=true, 
+#+LATEX_HEADER_EXTRA:             firstinits=true, 
+#+LATEX_HEADER_EXTRA:             uniquename=false,
+#+LATEX_HEADER_EXTRA:             uniquelist=false,
+#+LATEX_HEADER_EXTRA:             %uniquelist=minyear,
+#+LATEX_HEADER_EXTRA:             maxnames=99, 
+#+LATEX_HEADER_EXTRA:             maxcitenames=1]{biblatex}
+#+LATEX_HEADER_EXTRA:\addbibresource{/home/kdm/Documents/Papers/library.bib}
+#+LATEX_HEADER_EXTRA:\addbibresource{/home/kdm/Documents/Papers/software.bib}
+#+LATEX_HEADER_EXTRA:\addbibresource{/home/kdm/Documents/Papers/data.bib}
+#+LATEX_HEADER_EXTRA: \renewbibmacro{in:}{}
+
+# biber <texfile><.NOEXT> --output_format bibtex
+# biber --output_format=bibtex --output_resolve ${fn}.bcf
+
+# http://tex.stackexchange.com/a/5779/360
+#+LATEX_HEADER_EXTRA: % Don't print URL if DOI field exists
+#+LATEX_HEADER_EXTRA: \DeclareFieldFormat{url}{%
+#+LATEX_HEADER_EXTRA:   \iffieldundef{doi}{%
+#+LATEX_HEADER_EXTRA:     \mkbibacro{URL}\addcolon\space\url{#1}%
+#+LATEX_HEADER_EXTRA:   }{%
+#+LATEX_HEADER_EXTRA:   }%
+#+LATEX_HEADER_EXTRA: }
+#+LATEX_HEADER_EXTRA: % Don't print URL if DOI field exists
+#+LATEX_HEADER_EXTRA: \DeclareFieldFormat{urldate}{%
+#+LATEX_HEADER_EXTRA:   \iffieldundef{doi}{%
+#+LATEX_HEADER_EXTRA:     \mkbibparens{\bibstring{urlseen}\space#1}%
+#+LATEX_HEADER_EXTRA:   }{%
+#+LATEX_HEADER_EXTRA:   }%
+#+LATEX_HEADER_EXTRA: }
+
+#+LATEX_HEADER_EXTRA: \renewbibmacro*{journal+issuetitle}{%
+#+LATEX_HEADER_EXTRA: \usebibmacro{journal}%
+#+LATEX_HEADER_EXTRA: \setunit*{\addspace}%
+#+LATEX_HEADER_EXTRA: \iffieldundef{series}
+#+LATEX_HEADER_EXTRA: {}
+#+LATEX_HEADER_EXTRA: {\newunit
+#+LATEX_HEADER_EXTRA: \printfield{series}%
+#+LATEX_HEADER_EXTRA: \setunit{\addspace}}%
+#+LATEX_HEADER_EXTRA: \usebibmacro{issue+date}%
+#+LATEX_HEADER_EXTRA: \setunit{\addcomma\space}%
+#+LATEX_HEADER_EXTRA: \usebibmacro{volume+number+eid}%
+#+LATEX_HEADER_EXTRA: \setunit{\addcolon\space}%
+#+LATEX_HEADER_EXTRA: \usebibmacro{issue}%
+#+LATEX_HEADER_EXTRA: \newunit}
+
+#+LATEX_HEADER_EXTRA: \newbibmacro*{issue+date}{%
+#+LATEX_HEADER_EXTRA: \iffieldundef{issue}
+#+LATEX_HEADER_EXTRA: {. \usebibmacro{date}}
+#+LATEX_HEADER_EXTRA: {\printfield{issue}%
+#+LATEX_HEADER_EXTRA: \setunit*{\addspace}%
+#+LATEX_HEADER_EXTRA: \usebibmacro{date}}%
+#+LATEX_HEADER_EXTRA: \newunit}
+
+#+LATEX_HEADER_EXTRA: \renewbibmacro*{volume+number+eid}{%
+#+LATEX_HEADER_EXTRA: \printfield{volume}%
+#+LATEX_HEADER_EXTRA: \setunit*{\addnbspace}% NEW (optional); there's also #+LATEX_HEADER_EXTRA: \addnbthinspace
+#+LATEX_HEADER_EXTRA: \printfield{number}%
+#+LATEX_HEADER_EXTRA: \setunit{\addcomma\space}%
+#+LATEX_HEADER_EXTRA: \printfield{eid}}
+#+LATEX_HEADER_EXTRA: \DeclareFieldFormat[article]{number}{\mkbibparens{#1}}
+
+#+LATEX_HEADER_EXTRA: \DeclareFieldFormat{pages}{#1}
+
+** Page and Fonts                                         :ignore:
+
+#+LATEX_HEADER_EXTRA: \pdfpagewidth 8.5in
+#+LATEX_HEADER_EXTRA: \pdfpageheight 11in
+#+LATEX_HEADER_EXTRA:  \usepackage{setspace}
+#+LATEX_HEADER_EXTRA:  \usepackage{hyperref} % links (citations, references, URLs, etc.)
+#+LATEX_HEADER_EXTRA:  \usepackage{fixltx2e} % fix some bugs. Require proper coding of equations...
+#+LATEX_HEADER_EXTRA:  \usepackage{enumitem}\setlist{nosep} % shrink space between bullets
+#+LATEX_HEADER_EXTRA:  \usepackage{lmodern}  % better i18n Postscript version of Knuth's cm fonts
+#+LATEX_HEADER_EXTRA:  \usepackage[final,protrusion=true,expansion=true]{microtype} % nice font tweaks
+#+LATEX_HEADER_EXTRA:  \usepackage[small,compact, sf]{titlesec} % reduce space
+#+LATEX_HEADER_EXTRA:  \usepackage[margin=1in]{geometry} % set page margins automatically 
+#+LATEX_HEADER_EXTRA:  \usepackage[parfill]{parskip}  % paragraphs have vert space not indent
+#+LATEX_HEADER_EXTRA:  %\usepackage{paralist} %\begin{compactitem} http://www.howtotex.com/packages/compact-lists-with-paralist
+#+LATEX_HEADER_EXTRA:  \usepackage[T1]{fontenc}
+#+LATEX_HEADER_EXTRA:  \usepackage[sc]{mathpazo} % Palatino font
+#+LATEX_HEADER_EXTRA:  \usepackage{fancyref} % \fref{fig:foo} makes everything pretty...
+#+LATEX_HEADER_EXTRA:  \usepackage{flafter} % make sure figures do not appear before their text:    
+#+LATEX_HEADER_EXTRA:  \usepackage[all]{hypcap} % links from go to top of table/image, not bottom.
+#+LATEX_HEADER_EXTRA:  \usepackage[section]{placeins} % floats get placed in the section
+#+LATEX_HEADER_EXTRA:  \usepackage{siunitx}
+#+LATEX_HEADER_EXTRA:  \usepackage{commath} % \dif, \od, \pd, \md, etc.
+#+LATEX_HEADER_EXTRA:  \usepackage{amsmath} % provides \eqref which adds []'s. 
+#+LATEX_HEADER_EXTRA:  %\numberwithin{equation}{section} % reference equations as [3.42] rather than 42.
+#+LATEX_HEADER_EXTRA:  \usepackage{amsfonts} % I hear these are also good to load
+#+LATEX_HEADER_EXTRA:  \usepackage{amssymb} % I hear these are also good to load
+#+LATEX_HEADER_EXTRA:  \usepackage[all]{onlyamsmath} % don't allow $$, eqnarray, etc.
+#+LATEX_HEADER_EXTRA:  %\usepackage{tocbibind} % add bib to toc
+
+** Code                                                   :ignore:
+# #+LATEX_HEADER_EXTRA:  \usepackage[gobble=auto]{pythontex}
+# #+LATEX_HEADER_EXTRA:  \setpythontexworkingdir{./}
+# #+LATEX_HEADER_EXTRA:  \usepackage{minted}
+# #+LATEX_HEADER_EXTRA:  \usemintedstyle{emacs}
+# #+LATEX_HEADER_EXTRA:  \newminted{common-lisp}{fontsize=\footnotesize}
+#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{minted}{\begin{mdframed}}
+#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{minted}{\end{mdframed}}
+** Hyperref                                               :ignore:
+#+LATEX_HEADER_EXTRA:  %\usepackage{datetime}\renewcommand{\dateseparator}{-}
+#+LATEX_HEADER_EXTRA:  \usepackage{xspace} % smart spaces
+#+LATEX_HEADER_EXTRA:  \hypersetup{
+#+LATEX_HEADER_EXTRA:    colorlinks=true,       % links are colored
+#+LATEX_HEADER_EXTRA:    urlcolor=blue,    % color of external links
+#+LATEX_HEADER_EXTRA:    linkcolor=blue,   % color of internal links
+#+LATEX_HEADER_EXTRA:    citecolor=blue,   % color of links to bibliography
+#+LATEX_HEADER_EXTRA:    draft=false, % link even in draft mode
+#+LATEX_HEADER_EXTRA:    bookmarksopen=true, % ?
+#+LATEX_HEADER_EXTRA:    pdfdisplaydoctitle=true}
+#+LATEX_HEADER_EXTRA:  \renewcommand{\textfraction}{0.05}
+#+LATEX_HEADER_EXTRA:  \renewcommand{\topfraction}{0.8}
+#+LATEX_HEADER_EXTRA:  \renewcommand{\bottomfraction}{0.8}
+#+LATEX_HEADER_EXTRA:  \renewcommand{\floatpagefraction}{0.75}
+
+** Figures                                                :ignore:
+#+LATEX_HEADER_EXTRA:  \usepackage{pdfpages}
+#+LATEX_HEADER_EXTRA:  \usepackage[final]{graphicx} % [final] means show figs in draft mode
+#+LATEX_HEADER_EXTRA:  \setkeys{Gin}{draft=false}
+#+LATEX_HEADER_EXTRA:  %\usepackage{wrapfig}
+#+LATEX_HEADER_EXTRA:  %\usepackage[Export]{adjustbox} % http://latex-alive.tumblr.com/post/81481408449
+#+LATEX_HEADER_EXTRA:  %\adjustboxset{max size={\textwidth}{0.7\textheight}}
+#+LATEX_HEADER_EXTRA:  \usepackage{mdframed}
+
+** Draft Mode                                             :ignore:
+# DRAFT
+#+LATEX_HEADER_EXTRA:  \usepackage{ifdraft} % used for conditional stuff
+#+LATEX_HEADER_EXTRA:  % \ifdraft{
+#+LATEX_HEADER_EXTRA:  %   \usepackage{draftwatermark}
+#+LATEX_HEADER_EXTRA:  %   \SetWatermarkText{DRAFT}
+#+LATEX_HEADER_EXTRA:  %   \SetWatermarkLightness{0.95}
+#+LATEX_HEADER_EXTRA:  %   \SetWatermarkScale{2}}{}
+#+LATEX_HEADER_EXTRA:  \ifdraft{\usepackage{lineno}\linenumbers\modulolinenumbers[5]}{}
+#+LATEX_HEADER_EXTRA:  \ifdraft{\doublespacing}{}
+#+LATEX_HEADER_EXTRA:  %\ifdraft{\usepackage{showlabels}}{}
+
+** Header/Footer                                          :ignore:
+# Header/footer
+#+LATEX_HEADER_EXTRA:  \usepackage{lastpage} % used in the footer of fancyheader
+#+LATEX_HEADER_EXTRA:  \usepackage{fancyhdr}
+#+LATEX_HEADER_EXTRA:  \pagestyle{fancyplain}
+#+LATEX_HEADER_EXTRA:  \lhead{}\chead{}\rhead{}
+#+LATEX_HEADER_EXTRA:  \lfoot{}\cfoot{}\rfoot{}
+#+LATEX_HEADER_EXTRA:  \lfoot{K. D. Mankoff} 
+#+LATEX_HEADER_EXTRA:  \rfoot{p. \thepage\ of \pageref*{LastPage}} % * means no link
+#+LATEX_HEADER_EXTRA:  \ifdraft{\chead{DRAFT -- DO NOT DISTRIBUTE}}{}
+#+LATEX_HEADER_EXTRA:  \renewcommand{\headrulewidth}{0.0pt} % no bars but thanks anyway.
+#+LATEX_HEADER_EXTRA:  \renewcommand{\footrulewidth}{0.0pt} 
+** GitInfo                                                :ignore:
+# GitInfo
+#+LATEX_HEADER_EXTRA: \usepackage[mark,missing={master}]{gitinfo2}
+#+LATEX_HEADER_EXTRA: \renewcommand{\gitMark}{\gitBranch\,@\,\gitAbbrevHash{}\gitDirty\,[\gitAuthorDate]}
+
+** COMMENT Embedded file                                          :ignore:
+#+LATEX_HEADER_EXTRA: \usepackage{embedfile}
+#+LATEX_HEADER_EXTRA: \embedfile{\jobname.org}
+
+# \usepackage[main,include]{embedall}
+# \IfFileExists{./\jobname.org}{\embedfile[desc=The original file]{\jobname.org}}{}
