@@ -5,6 +5,7 @@
 - [[#data][Data]]
   - [[#greenland-observations][Greenland observations]]
   - [[#antarctic-observations][Antarctic observations]]
+  - [[#greenland-ismip][Greenland ISMIP]]
   - [[#merge-obs--ismip][Merge obs & ismip]]
 - [[#questions][Questions]]
 
@@ -78,7 +79,7 @@ obs
 
 
 *** Greenland obs plot
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC jupyter-python :exports both
 _ = obs.plot(drawstyle='steps')
 #+END_SRC
 
@@ -119,19 +120,18 @@ np.sum(unumpy.uarray([1,1,1], [36,39,24]))
 
 ** Greenland ISMIP
 
-*** Load ISMIP SSP 245 50th percentile
+*** Load ISMIP SSP 245
 
 #+NAME: load_ismip
 #+BEGIN_SRC jupyter-python
 import xarray as xr
 ds = xr.open_dataset('./ISMIP6/emulandiceAIS_GIS_ssp245_globalsl_GT.nc')
 ismip = ds['GIS_sea_level_change']\
-    .sel(quantiles=50)\
     .to_dataframe()\
-    .drop(['quantiles'], axis='columns')\
-    .rename(columns={'GIS_sea_level_change':'Gt/yr'})
+    .unstack().T
+
+ismip.index = [pd.to_datetime(_[1], format='%Y') for _ in ismip.index]
 ismip.index.name = 'Date'
-ismip.index = [pd.to_datetime(_, format='%Y') for _ in ismip.index]
 #+END_SRC
 
 #+RESULTS: load_ismip
@@ -143,82 +143,87 @@ ismip
 #+END_SRC
 
 #+RESULTS:
-|                     | Gt/yr |
-|---------------------+-------|
-| 2020-01-01 00:00:00 |  1800 |
-| 2030-01-01 00:00:00 |  3960 |
-| 2040-01-01 00:00:00 |  6480 |
-| 2050-01-01 00:00:00 | 10080 |
-| 2060-01-01 00:00:00 | 12960 |
-| 2070-01-01 00:00:00 | 16920 |
-| 2080-01-01 00:00:00 | 20880 |
-| 2090-01-01 00:00:00 | 25200 |
-| 2100-01-01 00:00:00 | 27720 |
+| Date                |    50 |    17 |    83 |
+|---------------------+-------+-------+-------|
+| 2020-01-01 00:00:00 |  1800 |  1440 |  2520 |
+| 2030-01-01 00:00:00 |  3960 |  2880 |  5400 |
+| 2040-01-01 00:00:00 |  6480 |  4680 |  9000 |
+| 2050-01-01 00:00:00 | 10080 |  6840 | 13320 |
+| 2060-01-01 00:00:00 | 12960 |  8640 | 18000 |
+| 2070-01-01 00:00:00 | 16920 | 10800 | 23760 |
+| 2080-01-01 00:00:00 | 20880 | 12240 | 30600 |
+| 2090-01-01 00:00:00 | 25200 | 13320 | 37800 |
+| 2100-01-01 00:00:00 | 27720 | 12600 | 45720 |
 
 *** ISMIP annual contribution
 
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC jupyter-python :exports both
 ismip_ann = ismip.resample('1Y').mean().interpolate().diff()
-_ = ismip_ann.plot(drawstyle='steps')
+_ = ismip_ann.plot(drawstyle='steps', title='Greenland freshwater [Gt yr$^{-1}$]')
 #+END_SRC
 
 #+RESULTS:
-[[file:./figs_tmp/4e385e2c6ea7b86da42e1f39083fb83f2755ea28.png]]
+[[file:./figs_tmp/7e86524a86633b5bf09d26614c2fc7975f01d334.png]]
 
 ** Merge obs & ismip
 
 #+BEGIN_SRC jupyter-python
-df = pd.concat((obs, ismip_ann)).interpolate()
+# pd.concat((obs, ismip_ann)).interpolate()
+obs_17_50_83 = pd.concat([obs]*3, axis='columns', ignore_index=True)
+obs_17_50_83 = obs_17_50_83.rename(columns={0:17, 1:50, 2:83})
+df = pd.concat((obs_17_50_83, ismip_ann)).interpolate()
 df.head(50).tail(30)
 #+END_SRC
 
 #+RESULTS:
-|                     | Gt/yr |
-|---------------------+-------|
-| 2010-01-01 00:00:00 | 376.8 |
-| 2011-01-01 00:00:00 | 336.2 |
-| 2012-01-01 00:00:00 | 429.3 |
-| 2013-01-01 00:00:00 | 107.9 |
-| 2014-01-01 00:00:00 | 184.6 |
-| 2015-01-01 00:00:00 | 213.9 |
-| 2016-01-01 00:00:00 |   256 |
-| 2017-01-01 00:00:00 | 102.6 |
-| 2018-01-01 00:00:00 |  75.8 |
-| 2019-01-01 00:00:00 |   426 |
-| 2020-12-31 00:00:00 |   321 |
-| 2021-12-31 00:00:00 |   216 |
-| 2022-12-31 00:00:00 |   216 |
-| 2023-12-31 00:00:00 |   216 |
-| 2024-12-31 00:00:00 |   216 |
-| 2025-12-31 00:00:00 |   216 |
-| 2026-12-31 00:00:00 |   216 |
-| 2027-12-31 00:00:00 |   216 |
-| 2028-12-31 00:00:00 |   216 |
-| 2029-12-31 00:00:00 |   216 |
-| 2030-12-31 00:00:00 |   216 |
-| 2031-12-31 00:00:00 |   252 |
-| 2032-12-31 00:00:00 |   252 |
-| 2033-12-31 00:00:00 |   252 |
-| 2034-12-31 00:00:00 |   252 |
-| 2035-12-31 00:00:00 |   252 |
-| 2036-12-31 00:00:00 |   252 |
-| 2037-12-31 00:00:00 |   252 |
-| 2038-12-31 00:00:00 |   252 |
-| 2039-12-31 00:00:00 |   252 |
+| Date                |    17 |    50 |    83 |
+|---------------------+-------+-------+-------|
+| 2010-01-01 00:00:00 | 376.8 | 376.8 | 376.8 |
+| 2011-01-01 00:00:00 | 336.2 | 336.2 | 336.2 |
+| 2012-01-01 00:00:00 | 429.3 | 429.3 | 429.3 |
+| 2013-01-01 00:00:00 | 107.9 | 107.9 | 107.9 |
+| 2014-01-01 00:00:00 | 184.6 | 184.6 | 184.6 |
+| 2015-01-01 00:00:00 | 213.9 | 213.9 | 213.9 |
+| 2016-01-01 00:00:00 |   256 |   256 |   256 |
+| 2017-01-01 00:00:00 | 102.6 | 102.6 | 102.6 |
+| 2018-01-01 00:00:00 |  75.8 |  75.8 |  75.8 |
+| 2019-01-01 00:00:00 |   426 |   426 |   426 |
+| 2020-12-31 00:00:00 |   285 |   321 |   357 |
+| 2021-12-31 00:00:00 |   144 |   216 |   288 |
+| 2022-12-31 00:00:00 |   144 |   216 |   288 |
+| 2023-12-31 00:00:00 |   144 |   216 |   288 |
+| 2024-12-31 00:00:00 |   144 |   216 |   288 |
+| 2025-12-31 00:00:00 |   144 |   216 |   288 |
+| 2026-12-31 00:00:00 |   144 |   216 |   288 |
+| 2027-12-31 00:00:00 |   144 |   216 |   288 |
+| 2028-12-31 00:00:00 |   144 |   216 |   288 |
+| 2029-12-31 00:00:00 |   144 |   216 |   288 |
+| 2030-12-31 00:00:00 |   144 |   216 |   288 |
+| 2031-12-31 00:00:00 |   180 |   252 |   360 |
+| 2032-12-31 00:00:00 |   180 |   252 |   360 |
+| 2033-12-31 00:00:00 |   180 |   252 |   360 |
+| 2034-12-31 00:00:00 |   180 |   252 |   360 |
+| 2035-12-31 00:00:00 |   180 |   252 |   360 |
+| 2036-12-31 00:00:00 |   180 |   252 |   360 |
+| 2037-12-31 00:00:00 |   180 |   252 |   360 |
+| 2038-12-31 00:00:00 |   180 |   252 |   360 |
+| 2039-12-31 00:00:00 |   180 |   252 |   360 |
 
 *** Plot
 
-#+BEGIN_SRC jupyter-python
+#+BEGIN_SRC jupyter-python :exports both
 import matplotlib.pyplot as plt
 fig = plt.figure()
 ax = fig.add_subplot(111)
 
-df.plot(drawstyle='steps', ax=ax)
-_ = obs.resample('10Y').mean().plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Obs: Decadal average')
+obs_17_50_83[50].plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Observations', color='k')
+obs_17_50_83[50].resample('10Y').mean().plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Obs: Decadal average', color='k', alpha=0.5, linewidth=3)
+df.loc['2019':].plot(drawstyle='steps', ax=ax)
+_ = plt.legend()
 #+END_SRC
 
 #+RESULTS:
-[[file:./figs_tmp/09929bbfdf6976be9e0629cc039a626124e3d896.png]]
+[[file:./figs_tmp/c6155a076f2654b87971d1c40a04fc2a814625c1.png]]
 
 * Questions
 
