@@ -11,6 +11,8 @@
   - [[#antarctic-ismip][Antarctic ISMIP]]
   - [[#merge-antarctic-obs--ismip][Merge Antarctic obs & ismip]]
 - [[#output][Output]]
+- [[#latex-header][LaTeX Header]]
+  - [[#references][References]]
   - [[#page-and-fonts][Page and Fonts]]
   - [[#code][Code]]
   - [[#hyperref][Hyperref]]
@@ -422,7 +424,18 @@ writer(df_GL[83], './out/GL_83.csv')
 #+END_SRC
 
 #+RESULTS:
-TEX_HEADER_EXTRA:             style=authoryear,
+
+* LaTeX Header                                            :ignore:
+#+LaTeX_CLASS_OPTIONS: [article,letterpaper,times,12pt]
+** References                                             :ignore:
+
+#+LATEX_HEADER_EXTRA:%\usepackage[bibstyle=authoryear,firstinits=true,maxbibnames=99]{biblatex}
+#+LATEX_HEADER_EXTRA: \usepackage[hyperref=true,
+#+LATEX_HEADER_EXTRA:             %sorting=none, 
+#+LATEX_HEADER_EXTRA:             sorting=nyt,
+#+LATEX_HEADER_EXTRA:             %style=numeric, 
+#+LATEX_HEADER_EXTRA:             date=year,
+#+LATEX_HEADER_EXTRA:             style=authoryear,
 #+LATEX_HEADER_EXTRA:             %defernumbers=true, 
 #+LATEX_HEADER_EXTRA:             firstinits=true, 
 #+LATEX_HEADER_EXTRA:             uniquename=false,
