@@ -11,8 +11,9 @@
   - [[#antarctic-ismip][Antarctic ISMIP]]
   - [[#merge-antarctic-obs--ismip][Merge Antarctic obs & ismip]]
 - [[#output][Output]]
+- [[#references][References]]
 - [[#latex-header][LaTeX Header]]
-  - [[#references][References]]
+  - [[#references-1][References]]
   - [[#page-and-fonts][Page and Fonts]]
   - [[#code][Code]]
   - [[#hyperref][Hyperref]]
@@ -424,6 +425,9 @@ writer(df_GL[83], './out/GL_83.csv')
 #+END_SRC
 
 #+RESULTS:
+
+* References
+\printbibliography[heading=none]
 
 * LaTeX Header                                            :ignore:
 #+LaTeX_CLASS_OPTIONS: [article,letterpaper,times,12pt]
