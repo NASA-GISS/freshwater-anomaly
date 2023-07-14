@@ -219,11 +219,12 @@ ax = fig.add_subplot(111)
 obs_17_50_83[50].plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Observations', color='k')
 obs_17_50_83[50].resample('10Y').mean().plot(drawstyle='steps', ax=ax, y='Gt/yr', label='Obs: Decadal average', color='k', alpha=0.5, linewidth=3)
 df.loc['2019':].plot(drawstyle='steps', ax=ax)
+plt.title("Greenland freshwater: Historical obs -> ISMIP6 SSP245 projection")
 _ = plt.legend()
 #+END_SRC
 
 #+RESULTS:
-[[file:./figs_tmp/c6155a076f2654b87971d1c40a04fc2a814625c1.png]]
+[[file:./figs_tmp/866f67d1253238697d386b1935d68b24b841e09b.png]]
 
 * Questions
 
