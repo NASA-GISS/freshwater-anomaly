@@ -89,10 +89,12 @@ obs_GL
 
 
 *** Greenland obs plot
+
 #+BEGIN_SRC jupyter-python :exports both
 _ = obs_GL.plot(drawstyle='steps')
 #+END_SRC
 
+#+CAPTION: Greenland observed mass loss
 #+RESULTS:
 [[file:./figs_tmp/49456009d9f07ae08928903b21a69e5a2a16c6a6.png]]
 
@@ -119,6 +121,7 @@ ismip_GL.index.name = 'Date'
 ismip_GL
 #+END_SRC
 
+#+CAPTION: Greenland mass loss from ISMIP 245 percentiles
 #+RESULTS:
 | Date                |    50 |    17 |    83 |
 |---------------------+-------+-------+-------|
@@ -139,6 +142,7 @@ ismip_GL_ann = ismip_GL.resample('1Y').mean().interpolate().diff()
 _ = ismip_GL_ann.plot(drawstyle='steps', title='Greenland freshwater ISMIP6 245 [Gt yr$^{-1}$]')
 #+END_SRC
 
+#+CAPTION: Greenland mass loss from ISMIP 245 percentiles
 #+RESULTS:
 [[file:./figs_tmp/bc14fc58f9fba6219ce4f530e9a5a1f3b1442013.png]]
 
@@ -148,9 +152,10 @@ _ = ismip_GL_ann.plot(drawstyle='steps', title='Greenland freshwater ISMIP6 245 
 obs_GL_17_50_83 = pd.concat([obs_GL]*3, axis='columns', ignore_index=True)
 obs_GL_17_50_83 = obs_GL_17_50_83.rename(columns={0:17, 1:50, 2:83})
 df_GL = pd.concat((obs_GL_17_50_83, ismip_GL_ann)).interpolate()
-df_GL.head(50).tail(30)
+df_GL.head(40).tail(20)
 #+END_SRC
 
+#+CAPTION: Merged observations and ISMIP projections for Greenland mass loss. Focusing on ~2020 where merge occurs.
 #+RESULTS:
 | Date                |    17 |    50 |    83 |
 |---------------------+-------+-------+-------|
@@ -174,16 +179,6 @@ df_GL.head(50).tail(30)
 | 2027-12-31 00:00:00 |   144 |   216 |   288 |
 | 2028-12-31 00:00:00 |   144 |   216 |   288 |
 | 2029-12-31 00:00:00 |   144 |   216 |   288 |
-| 2030-12-31 00:00:00 |   144 |   216 |   288 |
-| 2031-12-31 00:00:00 |   180 |   252 |   360 |
-| 2032-12-31 00:00:00 |   180 |   252 |   360 |
-| 2033-12-31 00:00:00 |   180 |   252 |   360 |
-| 2034-12-31 00:00:00 |   180 |   252 |   360 |
-| 2035-12-31 00:00:00 |   180 |   252 |   360 |
-| 2036-12-31 00:00:00 |   180 |   252 |   360 |
-| 2037-12-31 00:00:00 |   180 |   252 |   360 |
-| 2038-12-31 00:00:00 |   180 |   252 |   360 |
-| 2039-12-31 00:00:00 |   180 |   252 |   360 |
 
 *** Plot
 
@@ -199,6 +194,7 @@ plt.title("Greenland freshwater: Historical obs -> ISMIP6 SSP245 projection")
 _ = plt.legend()
 #+END_SRC
 
+#+CAPTION: Merged observations and ISMIP projections for Greenland mass loss
 #+RESULTS:
 [[file:./figs_tmp/866f67d1253238697d386b1935d68b24b841e09b.png]]
 
@@ -239,6 +235,7 @@ obs_AQ['Total'] = obs_AQ.sum(axis='columns')
 obs_AQ
 #+END_SRC
 
+#+CAPTION: Observed annual Antarctic ice mass loss from components and total
 #+RESULTS:
 | Date                | Ice Shelf Calving | Ice Shelf Thinning | Antarctica |   Total |
 |---------------------+-------------------+--------------------+------------+---------|
@@ -266,14 +263,13 @@ obs_AQ
 | 2015-01-01 00:00:00 |           139.387 |             -12.93 |     254.84 | 381.297 |
 | 2016-01-01 00:00:00 |           139.388 |             -49.23 |      67.02 | 157.178 |
 
-
-
 *** Antarctic obs plot
 
 #+BEGIN_SRC jupyter-python :exports both
 _ = obs_AQ.plot(drawstyle='steps')
 #+END_SRC
 
+#+CAPTION: Observed annual Antarctic ice mass loss from components and total
 #+RESULTS:
 [[file:./figs_tmp/77d67cba6ddbb200b4efdfa1220b68460ea5a7fd.png]]
 
@@ -325,6 +321,7 @@ ismip_AQ.index.name = 'Date'
 
 *** Table
 
+#+CAPTION: Annual Antarctic ice mass loss from ISMIP6 245
 #+BEGIN_SRC jupyter-python :exports both
 ismip_AQ
 #+END_SRC
@@ -349,6 +346,7 @@ ismip_AQ_ann = ismip_AQ.resample('1Y').mean().interpolate().diff()
 _ = ismip_AQ_ann.plot(drawstyle='steps', title='Antarctic freshwater ISMIP6 245 [Gt yr$^{-1}$]')
 #+END_SRC
 
+#+CAPTION: Annual Antarctic ice mass loss from ISMIP6 245
 #+RESULTS:
 [[file:./figs_tmp/4aa248b4c8b8d6f89792a5b0438ca6a73719fc87.png]]
 
@@ -359,12 +357,18 @@ _ = ismip_AQ_ann.plot(drawstyle='steps', title='Antarctic freshwater ISMIP6 245 
 obs_AQ_17_50_83 = pd.concat([obs_AQ['Total']]*3, axis='columns', ignore_index=True)
 obs_AQ_17_50_83 = obs_AQ_17_50_83.rename(columns={0:17, 1:50, 2:83})
 df_AQ = pd.concat((obs_AQ_17_50_83, ismip_AQ_ann)).interpolate()
-df_AQ.head(50).tail(30)
+df_AQ.head(35).tail(20)
 #+END_SRC
 
+#+CAPTION: Merged observations and ISMIP projections for Greenland mass loss. Focused near 2016 where observations end and projections begin.
 #+RESULTS:
 | Date                |      17 |      50 |      83 |
 |---------------------+---------+---------+---------|
+| 2009-01-01 00:00:00 | 534.738 | 534.738 | 534.738 |
+| 2010-01-01 00:00:00 | 585.388 | 585.388 | 585.388 |
+| 2011-01-01 00:00:00 | 416.558 | 416.558 | 416.558 |
+| 2012-01-01 00:00:00 | 443.838 | 443.838 | 443.838 |
+| 2013-01-01 00:00:00 | 499.557 | 499.557 | 499.557 |
 | 2014-01-01 00:00:00 | 456.938 | 456.938 | 456.938 |
 | 2015-01-01 00:00:00 | 381.297 | 381.297 | 381.297 |
 | 2016-01-01 00:00:00 | 157.178 | 157.178 | 157.178 |
@@ -380,21 +384,6 @@ df_AQ.head(50).tail(30)
 | 2029-12-31 00:00:00 |     108 |     180 |     216 |
 | 2030-12-31 00:00:00 |     108 |     180 |     216 |
 | 2031-12-31 00:00:00 |     108 |     216 |     324 |
-| 2032-12-31 00:00:00 |     108 |     216 |     324 |
-| 2033-12-31 00:00:00 |     108 |     216 |     324 |
-| 2034-12-31 00:00:00 |     108 |     216 |     324 |
-| 2035-12-31 00:00:00 |     108 |     216 |     324 |
-| 2036-12-31 00:00:00 |     108 |     216 |     324 |
-| 2037-12-31 00:00:00 |     108 |     216 |     324 |
-| 2038-12-31 00:00:00 |     108 |     216 |     324 |
-| 2039-12-31 00:00:00 |     108 |     216 |     324 |
-| 2040-12-31 00:00:00 |     108 |     216 |     324 |
-| 2041-12-31 00:00:00 |     144 |     252 |     396 |
-| 2042-12-31 00:00:00 |     144 |     252 |     396 |
-| 2043-12-31 00:00:00 |     144 |     252 |     396 |
-| 2044-12-31 00:00:00 |     144 |     252 |     396 |
-| 2045-12-31 00:00:00 |     144 |     252 |     396 |
-| 2046-12-31 00:00:00 |     144 |     252 |     396 |
 
 
 *** Plot
@@ -411,6 +400,7 @@ plt.title("Antarctic freshwater: Historical obs -> ISMIP6 SSP245 projection")
 _ = plt.legend(fontsize=8)
 #+END_SRC
 
+#+CAPTION: Merged observations and ISMIP projections for Greenland mass loss
 #+RESULTS:
 [[file:./figs_tmp/6e2e9784d7c14e372215f358e64ba810946c85b9.png]]
 
