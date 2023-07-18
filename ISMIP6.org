@@ -1,42 +1,106 @@
-#+NAME: Combining observational and ISMIP freshwater forcing
+#+TITLE: Merging Observed & ISMIP6 Freshwater Anomalies
+#+AUTHOR: K. D. Mankoff
 
-* Table of contents                               :toc_2:noexport:
+#+EMAIL:  ken.mankoff@nasa.gov
+#+DATE: \tiny{ {{{time(%Y-%m-%d)}}} version:\input{|"git describe --always --dirty='*'"} } 
+
+# version:\input{|"git describe --always --dirty='*'"}}}}}
+# #+DATE: \tiny{2020-02-05} @@latex:\\@@ { \tiny version:\input{|"git describe --always --dirty='*'"}}
+
+#+MACRO: NEWLINE @@latex:\\@@ @@html:<br>@@
+#+MACRO: SKIPLINE @@latex:\\\vspace{\baselineskip}@@
+#+MACRO: WARNING @@latex: {\fontencoding{U}\fontfamily{futs}\selectfont\char 66\relax}@@
+
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE:  en
+#+OPTIONS:   H:2 num:nil ^:{} toc:nil
+
+#+EXCLUDE_TAGS: noexport
+#+ARCHIVE: ::* Archive
+
+#+PROPERTY: header-args :eval no-export :noweb yes
+# #+PROPERTY: header-args:jupyter-python :session MC-LOB :eval no-export :noweb yes :exports results :results raw drawer
+# #+PROPERTY: header-args:jupyter-python+ :var datadir="/home/kdm/projects/freshwater/freshwater/runoff/"
+
+* Table of contents                       :toc_2:noexport:
 - [[#introduction][Introduction]]
-- [[#greenland][Greenland]]
-  - [[#greenland-observations][Greenland observations]]
-  - [[#greenland-ismip][Greenland ISMIP]]
-  - [[#merge-greenland-obs--ismip][Merge Greenland obs & ismip]]
-- [[#antarctica][Antarctica]]
-  - [[#antarctic-observations][Antarctic observations]]
-  - [[#antarctic-ismip][Antarctic ISMIP]]
-  - [[#merge-antarctic-obs--ismip][Merge Antarctic obs & ismip]]
-- [[#output][Output]]
-- [[#references][References]]
-- [[#latex-header][LaTeX Header]]
-  - [[#references-1][References]]
-  - [[#page-and-fonts][Page and Fonts]]
+  - [[#summary][Summary]]
+  - [[#issues][Issues]]
+- [[#greenland-observations][Greenland observations]]
+  - [[#mankoff-2021][Mankoff 2021]]
+  - [[#greenland-observations-code][Greenland observations: code]]
+  - [[#greenland-observations-table][Greenland observations: table]]
+  - [[#greenland-observations-plot][Greenland observations: plot]]
+- [[#greenland-ismip][Greenland ISMIP]]
+  - [[#load-ismip-ssp-245][Load ISMIP SSP 245]]
+  - [[#table][Table]]
+  - [[#ismip-annual-contribution][ISMIP annual contribution]]
+- [[#merge-greenland-obs--ismip][Merge Greenland obs & ismip]]
   - [[#code][Code]]
+  - [[#table-1][Table]]
+  - [[#plot][Plot]]
+- [[#antarctic-observations][Antarctic observations]]
+  - [[#data-source][Data source]]
+  - [[#load-data][Load data]]
+  - [[#antarctic-obs-table][Antarctic obs table]]
+  - [[#antarctic-obs-plot][Antarctic obs plot]]
+  - [[#uncertainty][Uncertainty]]
+- [[#antarctic-ismip][Antarctic ISMIP]]
+  - [[#load-ismip-ssp-245-1][Load ISMIP SSP 245]]
+  - [[#table-2][Table]]
+  - [[#ismip-annual-contribution-1][ISMIP annual contribution]]
+- [[#merge-antarctic-obs--ismip][Merge Antarctic obs & ismip]]
+  - [[#code-1][Code]]
+  - [[#table-3][Table]]
+  - [[#plot-1][Plot]]
+- [[#summary-1][Summary]]
+  - [[#output][Output]]
+  - [[#questions--to-do][Questions & To Do]]
+- [[#appendix][Appendix]]
+  - [[#references][References]]
+  - [[#about-this-document][About This Document]]
+- [[#latex-header][LaTeX Header]]
+  - [[#beamer][Beamer]]
+  - [[#references-1][References]]
   - [[#hyperref][Hyperref]]
-  - [[#figures][Figures]]
-  - [[#draft-mode][Draft Mode]]
-  - [[#headerfooter][Header/Footer]]
-  - [[#gitinfo][GitInfo]]
+  - [[#tweak-references][Tweak References]]
+  - [[#background-block][Background Block]]
+  - [[#code-export][Code export]]
+- [[#local-variables][Local Variables]]
 
 * Introduction
+** Summary
 
-Append ISMIP6 SLR estimates onto observationally constrained historical mass loss
+This workbook
 
-* Greenland
++ Computes freshwater anomaly from Greenland and Antarctica for the NASA GISS ModelE. 
+  + Anomaly is defined as mass loss from 1990 through 2100
++ We use observed anomalies ~1990 through ~2020
+  + Greenland: 1990 -- 2020 
+  + Antarctica: 1994 through 2017; Data from 1990 -- 1993 is extrapolated.
++ We use ISMIP6 projections from 2020 through 2100
 
-** Greenland observations
+** Issues
 
-+ From [[citet:mankoff_2021][Mankoff (2021)]]
++ {{{WARNING}}} Projections in Antarctica are only grounded ice, not ice shelf calving and melting, which is the majority of the observed mass loss.
+
+* Greenland observations
+** Mankoff 2021
+
+citet:mankoff_2021 provide *main ice sheet* mass loss from 1840 through next week.
+
 + Years with mass gain subtracted from following years $\rightarrow$ all mass change is $\le$ 0.
 + =hi= and =lo= years are $\pm$ published uncertainty from [[citet:mankoff_2021][Mankoff (2021)]]
 
-*** Load Greenland obs
+{{{SKIPLINE}}}
 
-#+BEGIN_SRC jupyter-python :exports both
++ Paper: https://doi.org/10.5194/essd-13-5001-2021
++ Data: https://doi.org/10.22008/FK2/OHI23Z v439
+
+** Greenland observations: code
+
+#+BEGIN_SRC jupyter-python :exports code
 import pandas as pd
 obs_GL = pd.read_csv('./out/mass_change_no_gain_greenland.csv',
                  index_col=0,
@@ -49,11 +113,14 @@ obs_GL.index.name='Date'
 
 #+RESULTS:
 
+** Greenland observations: table
 
-*** Greenland obs table
-
-#+BEGIN_SRC jupyter-python :exports both
-obs_GL
+*** Head                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
+#+BEGIN_SRC jupyter-python :exports results
+obs_GL.head(15)
 #+END_SRC
 
 #+RESULTS:
@@ -74,6 +141,18 @@ obs_GL
 | 2002-01-01 00:00:00 | 142.5 |
 | 2003-01-01 00:00:00 | 167.2 |
 | 2004-01-01 00:00:00 | 165.8 |
+
+*** Tail                                                   :BMCOL:
+:PROPERTIES:
+:BEAMER_col: 0.5
+:END:
+#+BEGIN_SRC jupyter-python :exports results
+obs_GL.tail(15)
+#+END_SRC
+
+#+RESULTS:
+| Date                | Gt/yr |
+|---------------------+-------|
 | 2005-01-01 00:00:00 | 168.4 |
 | 2006-01-01 00:00:00 | 239.8 |
 | 2007-01-01 00:00:00 | 257.3 |
@@ -91,21 +170,26 @@ obs_GL
 | 2019-01-01 00:00:00 |   426 |
 
 
-*** Greenland obs plot
 
-#+BEGIN_SRC jupyter-python :exports both
+** Greenland observations: plot
+
+#+BEGIN_SRC jupyter-python :exports results
 _ = obs_GL.plot(drawstyle='steps')
 #+END_SRC
 
+#+ATTR_LATEX: :height 0.8\textheight
 #+CAPTION: Greenland observed mass loss
 #+RESULTS:
 [[file:./figs_tmp/49456009d9f07ae08928903b21a69e5a2a16c6a6.png]]
 
-** Greenland ISMIP
-*** Load ISMIP SSP 245
+ 
+  
+* Greenland ISMIP
+
+** Load ISMIP SSP 245
 
 #+NAME: load_ismip_GL
-#+BEGIN_SRC jupyter-python :exports both
+#+BEGIN_SRC jupyter-python :exports code
 import xarray as xr
 ds = xr.open_dataset('./ISMIP6/emulandiceAIS_GIS_ssp245_globalsl_GT.nc')
 ismip_GL = ds['GIS_sea_level_change']\
@@ -118,9 +202,9 @@ ismip_GL.index.name = 'Date'
 
 #+RESULTS: load_ismip_GL
 
-*** Table
+** Table
 
-#+BEGIN_SRC jupyter-python :exports result
+#+BEGIN_SRC jupyter-python :exports results
 ismip_GL
 #+END_SRC
 
@@ -138,23 +222,37 @@ ismip_GL
 | 2090-01-01 00:00:00 | 25200 | 13320 | 37800 |
 | 2100-01-01 00:00:00 | 27720 | 12600 | 45720 |
 
-*** ISMIP annual contribution
+** ISMIP annual contribution
 
-#+BEGIN_SRC jupyter-python :exports both
+#+BEGIN_SRC jupyter-python :exports results
 ismip_GL_ann = ismip_GL.resample('1Y').mean().interpolate().diff()
 _ = ismip_GL_ann.plot(drawstyle='steps', title='Greenland freshwater ISMIP6 245 [Gt yr$^{-1}$]')
 #+END_SRC
 
+#+ATTR_LATEX: :height 0.8\textheight
 #+CAPTION: Greenland mass loss from ISMIP 245 percentiles
 #+RESULTS:
 [[file:./figs_tmp/bc14fc58f9fba6219ce4f530e9a5a1f3b1442013.png]]
 
-** Merge Greenland obs & ismip
 
-#+BEGIN_SRC jupyter-python :exports both
+
+
+* Merge Greenland obs & ismip
+
+** Code
+
+#+BEGIN_SRC jupyter-python :exports code
 obs_GL_17_50_83 = pd.concat([obs_GL]*3, axis='columns', ignore_index=True)
 obs_GL_17_50_83 = obs_GL_17_50_83.rename(columns={0:17, 1:50, 2:83})
 df_GL = pd.concat((obs_GL_17_50_83, ismip_GL_ann)).interpolate()
+#+END_SRC
+
+#+RESULTS:
+
+** Table
+
+
+#+BEGIN_SRC jupyter-python :exports results
 df_GL.head(40).tail(20)
 #+END_SRC
 
@@ -183,9 +281,9 @@ df_GL.head(40).tail(20)
 | 2028-12-31 00:00:00 |   144 |   216 |   288 |
 | 2029-12-31 00:00:00 |   144 |   216 |   288 |
 
-*** Plot
+** Plot
 
-#+BEGIN_SRC jupyter-python :exports both
+#+BEGIN_SRC jupyter-python :exports results
 import matplotlib.pyplot as plt
 fig = plt.figure()
 ax = fig.add_subplot(111)
@@ -197,17 +295,17 @@ plt.title("Greenland freshwater: Historical obs -> ISMIP6 SSP245 projection")
 _ = plt.legend()
 #+END_SRC
 
+#+ATTR_LATEX: :height 0.8\textheight
 #+CAPTION: Merged observations and ISMIP projections for Greenland mass loss
 #+RESULTS:
 [[file:./figs_tmp/866f67d1253238697d386b1935d68b24b841e09b.png]]
 
+* Antarctic observations
 
-* Antarctica
-** Antarctic observations
-
+** Data source
 + From [[citet:slater_2021][Slater (2021)]]
 
-*** Load Antarctic obs
+** Load data
 
 #+BEGIN_SRC jupyter-python :exports both
 import pandas as pd
@@ -232,7 +330,9 @@ obs_AQ['Total'] = obs_AQ.sum(axis='columns')
 
 #+RESULTS:
 
-*** Antarctic obs table
+** Antarctic obs table
+
+\fontsize{4pt}{4}\selectfont
 
 #+BEGIN_SRC jupyter-python :exports both
 obs_AQ
@@ -266,17 +366,18 @@ obs_AQ
 | 2015-01-01 00:00:00 |           139.387 |             -12.93 |     254.84 | 381.297 |
 | 2016-01-01 00:00:00 |           139.388 |             -49.23 |      67.02 | 157.178 |
 
-*** Antarctic obs plot
+** Antarctic obs plot
 
-#+BEGIN_SRC jupyter-python :exports both
+#+BEGIN_SRC jupyter-python :exports results
 _ = obs_AQ.plot(drawstyle='steps')
 #+END_SRC
 
+#+ATTR_LATEX: :height 0.8\textheight
 #+CAPTION: Observed annual Antarctic ice mass loss from components and total
 #+RESULTS:
 [[file:./figs_tmp/77d67cba6ddbb200b4efdfa1220b68460ea5a7fd.png]]
 
-*** Uncertainty
+** Uncertainty
 
 From [[citet:slater_2021][Slater (2021)]] Table 1
 
@@ -293,7 +394,7 @@ From [[citet:slater_2021][Slater (2021)]] Table 1
 + Assume these are 1 \sigma uncertainty
 + lo/mid/hi estimates can use mean (33), max (39) or sum (99)
 
-**** If fields are random
+*** If fields are random
 
 #+BEGIN_SRC jupyter-python :exports both
 from uncertainties import unumpy
@@ -304,9 +405,9 @@ np.sum(unumpy.uarray([1,1,1], [36,39,24]))
 #+RESULTS:
 : 3.0+/-58.249463516842795
 
-** Antarctic ISMIP
+* Antarctic ISMIP
 
-*** Load ISMIP SSP 245
+** Load ISMIP SSP 245
 
 #+NAME: load_ismip_AQ
 #+BEGIN_SRC jupyter-python :exports both
@@ -322,10 +423,10 @@ ismip_AQ.index.name = 'Date'
 
 #+RESULTS: load_ismip_AQ
 
-*** Table
+** Table
 
 #+CAPTION: Annual Antarctic ice mass loss from ISMIP6 245
-#+BEGIN_SRC jupyter-python :exports both
+#+BEGIN_SRC jupyter-python :exports results
 ismip_AQ
 #+END_SRC
 
@@ -342,28 +443,36 @@ ismip_AQ
 | 2090-01-01 00:00:00 | 23760 | 8640 | 38581 |
 | 2100-01-01 00:00:00 | 28800 | 9720 | 50040 |
 
-*** ISMIP annual contribution
+** ISMIP annual contribution
 
-#+BEGIN_SRC jupyter-python :exports both
+#+BEGIN_SRC jupyter-python :exports results
 ismip_AQ_ann = ismip_AQ.resample('1Y').mean().interpolate().diff()
 _ = ismip_AQ_ann.plot(drawstyle='steps', title='Antarctic freshwater ISMIP6 245 [Gt yr$^{-1}$]')
 #+END_SRC
 
+#+ATTR_LATEX: :height 0.8\textheight
 #+CAPTION: Annual Antarctic ice mass loss from ISMIP6 245
 #+RESULTS:
 [[file:./figs_tmp/4aa248b4c8b8d6f89792a5b0438ca6a73719fc87.png]]
 
 
-** Merge Antarctic obs & ismip
-
+* Merge Antarctic obs & ismip
+** Code
 #+BEGIN_SRC jupyter-python :exports both
 obs_AQ_17_50_83 = pd.concat([obs_AQ['Total']]*3, axis='columns', ignore_index=True)
 obs_AQ_17_50_83 = obs_AQ_17_50_83.rename(columns={0:17, 1:50, 2:83})
 df_AQ = pd.concat((obs_AQ_17_50_83, ismip_AQ_ann)).interpolate()
+#+END_SRC
+
+** Table
+
+\fontsize{5pt}{5}\selectfont
+
+#+BEGIN_SRC jupyter-python :exports results
 df_AQ.head(35).tail(20)
 #+END_SRC
 
-#+CAPTION: Merged observations and ISMIP projections for Greenland mass loss. Focused near 2016 where observations end and projections begin.
+#+CAPTION: Merged observations and ISMIP projections for Antarctic mass loss. Focused near 2016 where observations end and projections begin.
 #+RESULTS:
 | Date                |      17 |      50 |      83 |
 |---------------------+---------+---------+---------|
@@ -389,9 +498,9 @@ df_AQ.head(35).tail(20)
 | 2031-12-31 00:00:00 |     108 |     216 |     324 |
 
 
-*** Plot
+** Plot
 
-#+BEGIN_SRC jupyter-python :exports both
+#+BEGIN_SRC jupyter-python :exports results
 import matplotlib.pyplot as plt
 fig = plt.figure()
 ax = fig.add_subplot(111)
@@ -403,11 +512,14 @@ plt.title("Antarctic freshwater: Historical obs -> ISMIP6 SSP245 projection")
 _ = plt.legend(fontsize=8)
 #+END_SRC
 
-#+CAPTION: Merged observations and ISMIP projections for Greenland mass loss
+#+ATTR_LATEX: :height 0.8\textheight
+#+CAPTION: Merged observations and ISMIP projections for Antarctic mass loss
 #+RESULTS:
 [[file:./figs_tmp/6e2e9784d7c14e372215f358e64ba810946c85b9.png]]
 
-* Output                                                :noexport:
+* Summary
+
+** Output                                               :noexport:
 
 #+BEGIN_SRC jupyter-python
 
@@ -426,19 +538,142 @@ writer(df_GL[83], './out/GL_83.csv')
 
 #+RESULTS:
 
-* References
+
+** Questions & To Do                                    :noexport:
+
++ [ ] ...
+
+* Appendix                                            :B_appendix:
+:PROPERTIES:
+:BEAMER_env: appendix
+:END:
+** References
+:PROPERTIES:
+:BEAMER_opt: allowframebreaks,label=
+:BEAMER_opt: shrink=10
+:END:
+
+#+LATEX_HEADER_EXTRA: \renewcommand*{\bibfont}{\small}
 \printbibliography[heading=none]
 
-* LaTeX Header                                            :ignore:
-#+LaTeX_CLASS_OPTIONS: [article,letterpaper,times,12pt]
-** References                                             :ignore:
+** About This Document
+# :PROPERTIES:
+# :BEAMER_opt: shrink=10
+# :END:
+
+This document is an Emacs Org Mode plain-text file with code and text
+embedded. If you are viewing:
++ A PDF, HTML, or DOC file, then it was generated by exporting from Org. Not all of the Org parts (code, results, comments, etc.) were exported. The Org source file is available upon request, and may be embedded in the PDF. You can access files embedded in PDF files with from within your PDF viewer.
++ A file with an ~org~ extension in something other than Emacs, then you are seeing the canonical version and the full source, but without any syntax highlighting, document structure, or the ability to execute the code blocks.
++ An ~Org~ file within Emacs, then this is the canonical version. You should be able to fully interact and reproduce the contents of this document, although it may require 3rd-party applications (Python, etc.) and a similar Emacs configuration. This is available upon request.
+
+* LaTeX Header                                          :noexport:
+** Beamer
+
+#+STARTUP: beamer
+#+LaTeX_CLASS_OPTIONS: [presentation, smaller, compress, aspectratio=169]
+#+COLUMNS: %45ITEM %10BEAMER_env(Env) %10BEAMER_act(Act) %4BEAMER_col(Col) %8BEAMER_opt(Opt)
+#+PROPERTY: BEAMER_col_ALL 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 0.0 :ETC
+
+*** Title Page
+
+#+BEAMER_HEADER: \subtitle{\url{https://github.com/NASA-GISS/freshwater-anomaly}}
+#+BEAMER_HEADER: \institute[]{NASA GISS}
+
+#+BEAMER_HEADER: \titlegraphic{\includegraphics[height=1.0cm]{/home/kdm/Documents/templates/logos/NASA.png}}
+
+# #+BEAMER_HEADER: \logo{\includegraphics[height=1.0cm]{/home/kdm/Documents/templates/logos/NASA.png}}
+
+*** Theme
+
+#+BEAMER_THEME: Frankfurt
+#+BEAMER_COLOR_THEME: seagull
+
+#+BEAMER_HEADER: \setbeamertemplate{navigation symbols}{}
+
+#+BEAMER_HEADER: \setbeamercolor*{block title alerted}{bg=yellow!50}
+#+BEAMER_HEADER: \setbeamercolor*{block body alerted}{bg=yellow!30}
+#+BEAMER_HEADER: \setbeamertemplate{blocks}[rounded][shadow=true]
+
+#+BEAMER_HEADER: \setbeamercovered{transparent=30} % preview hidden content
+# #+BEAMER_HEADER: \setbeamercovered{invisible}
+
+
+#+BEAMER_HEADER: \setbeamertemplate{footline}{}
+
+#+BEAMER_HEADER: \setbeamertemplate{frametitle}{%
+#+BEAMER_HEADER:   \nointerlineskip
+#+BEAMER_HEADER:     \begin{beamercolorbox}[sep=0.1cm,wd=\paperwidth,leftskip=.2cm,rightskip=0cm]{frametitle}%
+#+BEAMER_HEADER:       \usebeamerfont{frametitle}\usebeamercolor[fg]{frametitle}\insertframetitle\\
+#+BEAMER_HEADER:       \usebeamerfont{framesubtitle}\usebeamercolor[fg]{framesubtitle}\insertframesubtitle
+#+BEAMER_HEADER:     \end{beamercolorbox}%
+#+BEAMER_HEADER: }
+
+#+BEAMER_HEADER: \usepackage{tikz}
+#+BEAMER_HEADER: \addtobeamertemplate{frametitle}{}{%
+#+BEAMER_HEADER: \begin{tikzpicture}[remember picture,overlay]
+#+BEAMER_HEADER:   \node[anchor=south east,yshift=0pt] at (current page.south east) {\includegraphics[height=1cm]{/home/kdm/Documents/templates/logos/NASA.png}};
+#+BEAMER_HEADER: \end{tikzpicture}\vspace{-0.4cm}}
+
+#+BEAMER_HEADER: \addtobeamertemplate{frametitle}{}{\tikz[overlay, remember picture] \node[anchor=south west,yshift=1pt] at (current page.south west){{\tiny\textcolor{gray}{\insertframenumber}}};}
+
+# #+BEAMER_HEADER: \setbeamerfont{headline}{size=\small}
+#+BEAMER_HEADER: \setbeamerfont{frametitle}{size=\Large}
+# \tiny \scriptsize \footnotesize \small \normalsize \large \Large \huge \Huge
+
+# (setq org-latex-listings nil)
+
+# #+INCLUDE: "./listings.org"
+# #+LaTeX: \setbeamercolor*{block title verbatim}{bg=yellow!50}
+# #+LaTeX: \setbeamercolor*{block body verbatim}{bg=yellow!30}
+
+*** COMMENT Presenter Notes
+
+
+%% Presenter Notes
+#+BEAMER_HEADER: \usepackage{pgfpages}
+#+BEAMER_HEADER: \setbeameroption{show notes on second screen}
+# #+BEAMER_HEADER: \setbeameroption{show notes on second screen=left}
+# #+BEAMER_HEADER: \setbeamertemplate{note page}[plain]
+
+# #+BEAMER_HEADER: \usepackage{handoutWithNotes}
+# #+BEAMER_HEADER: \pgfpagesuselayout{4 on 1 with notes}[a4paper,border shrink=5mm]
+
+*** Other
+
+#+BEAMER_HEADER: \usepackage{multimedia}
+#+BEAMER_HEADER: \usepackage{lxfonts}
+#+BEAMER_HEADER: \usefonttheme{professionalfonts}
+
+#+BEAMER_HEADER: \newcommand\bgimage[1]{%
+#+BEAMER_HEADER: \begin{backgroundblock}{-1mm}{0mm}
+#+BEAMER_HEADER: \includegraphics[height=\paperheight]{#1}
+#+BEAMER_HEADER: \end{backgroundblock}}
+
+#+BEAMER_HEADER: \newcommand\bgimagewide[1]{%
+#+BEAMER_HEADER: \begin{backgroundblock}{-1mm}{15mm}
+#+BEAMER_HEADER: \includegraphics[width=\paperwidth]{#1}
+#+BEAMER_HEADER: \end{backgroundblock}}
+
+#+BEAMER_HEADER: \usepackage[outline]{contour}
+#+BEAMER_HEADER: \usepackage[absolute,overlay]{textpos}
+#+BEAMER_HEADER: \newcommand\footertext[1]{%
+#+BEAMER_HEADER:   \begin{textblock*}{\paperwidth}(1em,0.95\paperheight)
+#+BEAMER_HEADER:     \contour{red}\protect\textcolor{black}{\small{#1}}
+#+BEAMER_HEADER:   \end{textblock*}}
+
+# #+LATEX_HEADER: \newcommand*{\TakeFourierOrnament}[1]{{%
+# #+LATEX_HEADER: \fontencoding{U}\fontfamily{futs}\selectfont\char#1}}
+# #+LATEX_HEADER: \newcommand*{\danger}{\TakeFourierOrnament{66}}
+#+LATEX_HEADER: \usepackage{fontawesome}
+
+** References
 
 #+LATEX_HEADER_EXTRA:%\usepackage[bibstyle=authoryear,firstinits=true,maxbibnames=99]{biblatex}
 #+LATEX_HEADER_EXTRA: \usepackage[hyperref=true,
 #+LATEX_HEADER_EXTRA:             %sorting=none, 
 #+LATEX_HEADER_EXTRA:             sorting=nyt,
 #+LATEX_HEADER_EXTRA:             %style=numeric, 
-#+LATEX_HEADER_EXTRA:             date=year,
 #+LATEX_HEADER_EXTRA:             style=authoryear,
 #+LATEX_HEADER_EXTRA:             %defernumbers=true, 
 #+LATEX_HEADER_EXTRA:             firstinits=true, 
@@ -446,14 +681,23 @@ writer(df_GL[83], './out/GL_83.csv')
 #+LATEX_HEADER_EXTRA:             uniquelist=false,
 #+LATEX_HEADER_EXTRA:             %uniquelist=minyear,
 #+LATEX_HEADER_EXTRA:             maxnames=99, 
-#+LATEX_HEADER_EXTRA:             maxcitenames=1]{biblatex}
+#+LATEX_HEADER_EXTRA:             backend=biber,
+#+LATEX_HEADER_EXTRA:             bibenconding=utf8,
+#+LATEX_HEADER_EXTRA:             maxcitenames=2]{biblatex}
 #+LATEX_HEADER_EXTRA:\addbibresource{/home/kdm/Documents/Papers/library.bib}
 #+LATEX_HEADER_EXTRA:\addbibresource{/home/kdm/Documents/Papers/software.bib}
 #+LATEX_HEADER_EXTRA:\addbibresource{/home/kdm/Documents/Papers/data.bib}
 #+LATEX_HEADER_EXTRA: \renewbibmacro{in:}{}
+#+LATEX_HEADER_EXTRA: \renewcommand*{\bibfont}{\footnotesize}
 
 # biber <texfile><.NOEXT> --output_format bibtex
-# biber --output_format=bibtex --output_resolve ${fn}.bcf
+
+#+LATEX_HEADER_EXTRA: \usepackage{xpatch}
+#+LATEX_HEADER_EXTRA: \xpatchbibmacro{name:andothers}{%
+#+LATEX_HEADER_EXTRA:   \bibstring{andothers}%
+#+LATEX_HEADER_EXTRA: }{%
+#+LATEX_HEADER_EXTRA:   \bibstring[\emph]{andothers}%
+#+LATEX_HEADER_EXTRA: }{}{}
 
 # http://tex.stackexchange.com/a/5779/360
 #+LATEX_HEADER_EXTRA: % Don't print URL if DOI field exists
@@ -504,51 +748,14 @@ writer(df_GL[83], './out/GL_83.csv')
 
 #+LATEX_HEADER_EXTRA: \DeclareFieldFormat{pages}{#1}
 
-** Page and Fonts                                         :ignore:
-
-#+LATEX_HEADER_EXTRA: \pdfpagewidth 8.5in
-#+LATEX_HEADER_EXTRA: \pdfpageheight 11in
-#+LATEX_HEADER_EXTRA:  \usepackage{setspace}
-#+LATEX_HEADER_EXTRA:  \usepackage{hyperref} % links (citations, references, URLs, etc.)
-#+LATEX_HEADER_EXTRA:  \usepackage{fixltx2e} % fix some bugs. Require proper coding of equations...
-#+LATEX_HEADER_EXTRA:  \usepackage{enumitem}\setlist{nosep} % shrink space between bullets
-#+LATEX_HEADER_EXTRA:  \usepackage{lmodern}  % better i18n Postscript version of Knuth's cm fonts
-#+LATEX_HEADER_EXTRA:  \usepackage[final,protrusion=true,expansion=true]{microtype} % nice font tweaks
-#+LATEX_HEADER_EXTRA:  \usepackage[small,compact, sf]{titlesec} % reduce space
-#+LATEX_HEADER_EXTRA:  \usepackage[margin=1in]{geometry} % set page margins automatically 
-#+LATEX_HEADER_EXTRA:  \usepackage[parfill]{parskip}  % paragraphs have vert space not indent
-#+LATEX_HEADER_EXTRA:  %\usepackage{paralist} %\begin{compactitem} http://www.howtotex.com/packages/compact-lists-with-paralist
-#+LATEX_HEADER_EXTRA:  \usepackage[T1]{fontenc}
-#+LATEX_HEADER_EXTRA:  \usepackage[sc]{mathpazo} % Palatino font
-#+LATEX_HEADER_EXTRA:  \usepackage{fancyref} % \fref{fig:foo} makes everything pretty...
-#+LATEX_HEADER_EXTRA:  \usepackage{flafter} % make sure figures do not appear before their text:    
-#+LATEX_HEADER_EXTRA:  \usepackage[all]{hypcap} % links from go to top of table/image, not bottom.
-#+LATEX_HEADER_EXTRA:  \usepackage[section]{placeins} % floats get placed in the section
-#+LATEX_HEADER_EXTRA:  \usepackage{siunitx}
-#+LATEX_HEADER_EXTRA:  \usepackage{commath} % \dif, \od, \pd, \md, etc.
-#+LATEX_HEADER_EXTRA:  \usepackage{amsmath} % provides \eqref which adds []'s. 
-#+LATEX_HEADER_EXTRA:  %\numberwithin{equation}{section} % reference equations as [3.42] rather than 42.
-#+LATEX_HEADER_EXTRA:  \usepackage{amsfonts} % I hear these are also good to load
-#+LATEX_HEADER_EXTRA:  \usepackage{amssymb} % I hear these are also good to load
-#+LATEX_HEADER_EXTRA:  \usepackage[all]{onlyamsmath} % don't allow $$, eqnarray, etc.
-#+LATEX_HEADER_EXTRA:  %\usepackage{tocbibind} % add bib to toc
-
-** Code                                                   :ignore:
-# #+LATEX_HEADER_EXTRA:  \usepackage[gobble=auto]{pythontex}
-# #+LATEX_HEADER_EXTRA:  \setpythontexworkingdir{./}
-# #+LATEX_HEADER_EXTRA:  \usepackage{minted}
-# #+LATEX_HEADER_EXTRA:  \usemintedstyle{emacs}
-# #+LATEX_HEADER_EXTRA:  \newminted{common-lisp}{fontsize=\footnotesize}
-#+LATEX_HEADER_EXTRA: \BeforeBeginEnvironment{minted}{\begin{mdframed}}
-#+LATEX_HEADER_EXTRA: \AfterEndEnvironment{minted}{\end{mdframed}}
-** Hyperref                                               :ignore:
+** Hyperref
 #+LATEX_HEADER_EXTRA:  %\usepackage{datetime}\renewcommand{\dateseparator}{-}
 #+LATEX_HEADER_EXTRA:  \usepackage{xspace} % smart spaces
 #+LATEX_HEADER_EXTRA:  \hypersetup{
 #+LATEX_HEADER_EXTRA:    colorlinks=true,       % links are colored
 #+LATEX_HEADER_EXTRA:    urlcolor=blue,    % color of external links
 #+LATEX_HEADER_EXTRA:    linkcolor=blue,   % color of internal links
-#+LATEX_HEADER_EXTRA:    citecolor=blue,   % color of links to bibliography
+#+LATEX_HEADER_EXTRA:    citecolor=gray,   % color of links to bibliography
 #+LATEX_HEADER_EXTRA:    draft=false, % link even in draft mode
 #+LATEX_HEADER_EXTRA:    bookmarksopen=true, % ?
 #+LATEX_HEADER_EXTRA:    pdfdisplaydoctitle=true}
@@ -557,47 +764,54 @@ writer(df_GL[83], './out/GL_83.csv')
 #+LATEX_HEADER_EXTRA:  \renewcommand{\bottomfraction}{0.8}
 #+LATEX_HEADER_EXTRA:  \renewcommand{\floatpagefraction}{0.75}
 
-** Figures                                                :ignore:
-#+LATEX_HEADER_EXTRA:  \usepackage{pdfpages}
-#+LATEX_HEADER_EXTRA:  \usepackage[final]{graphicx} % [final] means show figs in draft mode
-#+LATEX_HEADER_EXTRA:  \setkeys{Gin}{draft=false}
-#+LATEX_HEADER_EXTRA:  %\usepackage{wrapfig}
-#+LATEX_HEADER_EXTRA:  %\usepackage[Export]{adjustbox} % http://latex-alive.tumblr.com/post/81481408449
-#+LATEX_HEADER_EXTRA:  %\adjustboxset{max size={\textwidth}{0.7\textheight}}
-#+LATEX_HEADER_EXTRA:  \usepackage{mdframed}
+** Tweak References
 
-** Draft Mode                                             :ignore:
-# DRAFT
-#+LATEX_HEADER_EXTRA:  \usepackage{ifdraft} % used for conditional stuff
-#+LATEX_HEADER_EXTRA:  % \ifdraft{
-#+LATEX_HEADER_EXTRA:  %   \usepackage{draftwatermark}
-#+LATEX_HEADER_EXTRA:  %   \SetWatermarkText{DRAFT}
-#+LATEX_HEADER_EXTRA:  %   \SetWatermarkLightness{0.95}
-#+LATEX_HEADER_EXTRA:  %   \SetWatermarkScale{2}}{}
-#+LATEX_HEADER_EXTRA:  \ifdraft{\usepackage{lineno}\linenumbers\modulolinenumbers[5]}{}
-#+LATEX_HEADER_EXTRA:  \ifdraft{\doublespacing}{}
-#+LATEX_HEADER_EXTRA:  %\ifdraft{\usepackage{showlabels}}{}
+# Make citations smaller 
+# #+LATEX_HEADER_EXTRA: \let\realtextcite=\textcite
+# #+LATEX_HEADER_EXTRA: \renewcommand{\textcite}[1]{{\scriptsize\textcolor{gray}{\realtextcite{#1}}}}
+# #+LATEX_HEADER_EXTRA: \let\realautocite=\autocite
+# #+LATEX_HEADER_EXTRA: \renewcommand{\autocite}[1]{{\scriptsize\textcolor{gray}{\realautocite{#1}}}}
 
-** Header/Footer                                          :ignore:
-# Header/footer
-#+LATEX_HEADER_EXTRA:  \usepackage{lastpage} % used in the footer of fancyheader
-#+LATEX_HEADER_EXTRA:  \usepackage{fancyhdr}
-#+LATEX_HEADER_EXTRA:  \pagestyle{fancyplain}
-#+LATEX_HEADER_EXTRA:  \lhead{}\chead{}\rhead{}
-#+LATEX_HEADER_EXTRA:  \lfoot{}\cfoot{}\rfoot{}
-#+LATEX_HEADER_EXTRA:  \lfoot{K. D. Mankoff} 
-#+LATEX_HEADER_EXTRA:  \rfoot{p. \thepage\ of \pageref*{LastPage}} % * means no link
-#+LATEX_HEADER_EXTRA:  \ifdraft{\chead{DRAFT -- DO NOT DISTRIBUTE}}{}
-#+LATEX_HEADER_EXTRA:  \renewcommand{\headrulewidth}{0.0pt} % no bars but thanks anyway.
-#+LATEX_HEADER_EXTRA:  \renewcommand{\footrulewidth}{0.0pt} 
-** GitInfo                                                :ignore:
-# GitInfo
-#+LATEX_HEADER_EXTRA: \usepackage[mark,missing={master}]{gitinfo2}
-#+LATEX_HEADER_EXTRA: \renewcommand{\gitMark}{\gitBranch\,@\,\gitAbbrevHash{}\gitDirty\,[\gitAuthorDate]}
+#+LATEX_HEADER_EXTRA: \let\realtextcite=\textcite
+#+LATEX_HEADER_EXTRA: \renewcommand{\textcite}[1]{{\textcolor{gray}{\realtextcite{#1}}}}
+#+LATEX_HEADER_EXTRA: \let\realautocite=\autocite
+#+LATEX_HEADER_EXTRA: \renewcommand{\autocite}[1]{{\textcolor{gray}{\realautocite{#1}}}}
 
-** COMMENT Embedded file                                          :ignore:
+
+** Background Block
+
+# https://tex.stackexchange.com/questions/133955/beamer-how-to-place-images-behind-text-z-order
+# % beamer: How to place images behind text (z-order) (http://tex.stackexchange.com/a/134311)
+#+LATEX_HEADER_EXTRA: \makeatletter
+#+LATEX_HEADER_EXTRA: \newbox\@backgroundblock
+#+LATEX_HEADER_EXTRA: \newenvironment{backgroundblock}[2]{%
+#+LATEX_HEADER_EXTRA:   \global\setbox\@backgroundblock=\vbox\bgroup%
+#+LATEX_HEADER_EXTRA:     \unvbox\@backgroundblock%
+#+LATEX_HEADER_EXTRA:     \vbox to0pt\bgroup\vskip#2\hbox to0pt\bgroup\hskip#1\relax%
+#+LATEX_HEADER_EXTRA: }{\egroup\egroup\egroup}
+#+LATEX_HEADER_EXTRA: \addtobeamertemplate{background}{\box\@backgroundblock}{}
+#+LATEX_HEADER_EXTRA: \makeatother
+
+# \begin{backgroundblock}{-3mm}{9mm}
+# \includegraphics[height=\textheight]{./fig/Q.png}
+# \end{backgroundblock}
+
+** Code export
+
+# (add-to-list 'org-latex-packages-alist '("minted"))
+# (setq org-latex-listings 'minted)
+# (setq org-latex-packages-alist nil)
+# (setq org-latex-listings nil)
+
+** COMMENT Embedded file
 #+LATEX_HEADER_EXTRA: \usepackage{embedfile}
 #+LATEX_HEADER_EXTRA: \embedfile{\jobname.org}
 
 # \usepackage[main,include]{embedall}
 # \IfFileExists{./\jobname.org}{\embedfile[desc=The original file]{\jobname.org}}{}
+
+* Local Variables                                       :noexport:
+
+# Local Variables:
+# eval: (org-babel-lob-ingest "./lob.org")
+# End:
