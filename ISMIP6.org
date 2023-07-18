@@ -36,7 +36,7 @@
   - [[#load-ismip-ssp-245][Load ISMIP SSP 245]]
   - [[#table][Table]]
   - [[#ismip-annual-contribution][ISMIP annual contribution]]
-- [[#merge-greenland-obs--ismip][Merge Greenland obs & ismip]]
+- [[#greenland-merge][Greenland merge]]
   - [[#code][Code]]
   - [[#table-1][Table]]
   - [[#plot][Plot]]
@@ -50,7 +50,7 @@
   - [[#load-ismip-ssp-245-1][Load ISMIP SSP 245]]
   - [[#table-2][Table]]
   - [[#ismip-annual-contribution-1][ISMIP annual contribution]]
-- [[#merge-antarctic-obs--ismip][Merge Antarctic obs & ismip]]
+- [[#antarctic-merge][Antarctic merge]]
   - [[#code-1][Code]]
   - [[#table-3][Table]]
   - [[#plot-1][Plot]]
@@ -237,7 +237,7 @@ _ = ismip_GL_ann.plot(drawstyle='steps', title='Greenland freshwater ISMIP6 245 
 
 
 
-* Merge Greenland obs & ismip
+* Greenland merge
 
 ** Code
 
@@ -456,7 +456,7 @@ _ = ismip_AQ_ann.plot(drawstyle='steps', title='Antarctic freshwater ISMIP6 245 
 [[file:./figs_tmp/4aa248b4c8b8d6f89792a5b0438ca6a73719fc87.png]]
 
 
-* Merge Antarctic obs & ismip
+* Antarctic merge
 ** Code
 #+BEGIN_SRC jupyter-python :exports both
 obs_AQ_17_50_83 = pd.concat([obs_AQ['Total']]*3, axis='columns', ignore_index=True)
