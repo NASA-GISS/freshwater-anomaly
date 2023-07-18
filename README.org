@@ -14,7 +14,7 @@ Generate freshwater anomaly data files and distribution mask for ModelE
 + Anomaly is defined as mass loss from grounded ice and ice shelves (but not sea ice) since 1990.
 + Spatially, ModelE distributes a single value according to a 'distribution field' - a floating point mask that sums to 1.
 
-See [[./present.org]] for a digital workbook.
+See [[./workbook.org]] for a digital workbook.
 
 * Info
 
